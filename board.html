@@ -224,9 +224,9 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card" id="tensionCard">
       <b style="font-size:13px">Where you lose it</b>
-      <div class="hint" style="margin-top:2px">Every hum you lost, and where in the swing you lost it.</div>
+      <div class="hint" style="margin-top:2px">Every hum you lost, and where you lost it.</div>
       <canvas class="spark" id="tension" style="height:120px"></canvas>
-      <div class="hint" id="tensionText" style="margin-top:8px">Take three swings and this shows you the moment you're losing your hum.</div>
+      <div class="hint" id="tensionText" style="margin-top:8px">Three swings and you'll see exactly when you're losing it.</div>
     </div>
     <div class="card">
       <b style="font-size:13px">Your last 10</b>
@@ -1513,7 +1513,7 @@ function tensionPlot(rows){
 
   const all=[];
   rows.forEach(x=>{ if(Array.isArray(x.crack_rel)) x.crack_rel.forEach(v=>all.push(v)); });
-  if(all.length<3){ txt.textContent='Take three swings and this shows you the moment you’re losing your hum.'; return; }
+  if(all.length<3){ txt.textContent='Three swings and you’ll see exactly when you’re losing it.'; return; }
 
   const LO=-2.5, HI=1.5;                       // 2.5s before the ball to 1.5s after
   const xOf=t=>28+((Math.max(LO,Math.min(HI,t))-LO)/(HI-LO))*(w-36);
