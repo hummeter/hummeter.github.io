@@ -1497,12 +1497,14 @@ function drawShareCard(s){
   g.fillStyle='#3ef2a0'; g.font=F(800,42);
   g.fillText('Can you hold a steadier line?', PX, y2+72);
   g.fillStyle='#7e93aa'; g.font=F(600,32);
-  g.fillText('@brixton_pg   ·   score your own — link in bio', PX, y2+126);
+  g.fillText('@brixton_pg', PX, y2+126);
+  g.fillStyle='#eef3f9'; g.font=F(800,34);
+  g.fillText('hummeter.github.io', PX, y2+178);
 }
 
 const _shareBtn = document.getElementById('shareBtn');
 if(_shareBtn) _shareBtn.onclick = async () => {
-  const url='https://brixton-collab.github.io/hum-meter/board.html';
+  const url='https://hummeter.github.io/';
   const c=document.getElementById('card');
   const sc=document.getElementById('sc').textContent;
   const txt='Scored '+sc+' on the Hum Meter. See if you can hold a steadier line.';
