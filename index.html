@@ -422,17 +422,39 @@ function showBlocker(){
         '<button class="btn ghost" id="igcopy" style="margin-top:10px">Copy link instead</button>' +
       '</div></div>';
 
-  const btn = document.getElementById('igopen');
-  if(btn) btn.onclick = () => {
-    document.getElementById('igfb').classList.add('on');
-    btn.textContent = 'Opening ' + app + '…';
+  const jump = () => {
     location.href = ios
       ? 'x-safari-' + url
       : 'intent://' + url.replace(/^https?:\/\//,'') +
         '#Intent;scheme=https;package=com.android.chrome;end';
+  };
+
+  const btn = document.getElementById('igopen');
+  if(btn) btn.onclick = () => {
+    document.getElementById('igfb').classList.add('on');
+    btn.textContent = 'Opening ' + app + '…';
+    jump();
     // If we are still on screen 1.5s later the jump was refused — say so, don't lie.
     setTimeout(() => { btn.textContent = 'Open in ' + app; }, 1500);
   };
+
+  /* ── TRY TO LEAVE WITHOUT BEING ASKED ────────────────────────────────────────
+     He is right that tapping a link and then tapping again is a tax. So fire the
+     jump ONCE automatically on arrival: when iOS allows it the visitor never sees
+     this card at all, they just land in Safari.
+
+     iOS often refuses a scheme navigation with no user gesture behind it, and that
+     is exactly why the card is rendered FIRST and the jump attempted second — if
+     the OS says no, nothing has been lost and the button is already sitting there.
+
+     Once per session. A jump that failed will fail again, and re-firing it every
+     time they switch tabs would make the page feel possessed.                    */
+  try{
+    if(!sessionStorage.getItem('igJumped')){
+      sessionStorage.setItem('igJumped','1');
+      setTimeout(jump, 350);
+    }
+  }catch(e){ /* private mode: just leave the button */ }
   const c = document.getElementById('igcopy');
   if(c) c.onclick = async () => {
     try{ await navigator.clipboard.writeText(url); c.textContent = 'Copied — paste it in ' + app; }
@@ -1320,7 +1342,9 @@ async function paintAll(){
   const {rows, local} = await Store.everyone();
   document.getElementById('allNote').textContent = local
     ? 'No server connected yet, so this is only the hums recorded on this device.'
-    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size + ' golfers.';
+    : rows.length + ' hums measured from ' +
+      new Set(rows.map(r=>r.player_id)).size + ' golfers. The board below shows ' +
+      'everyone who added a name.';
   document.getElementById('allN').textContent = rows.length;
   document.getElementById('allAvg').textContent = rows.length
     ? (rows.reduce((s,r)=>s+r.score,0)/rows.length).toFixed(0) : '—';
@@ -1331,10 +1355,21 @@ async function paintAll(){
     rs.sort((a,b)=> a.at<b.at?-1:1);
     const first=rs.slice(0,3), last=rs.slice(-3);
     const avg=a=>a.reduce((s,r)=>s+r.score,0)/a.length;
-    return { id, name: (rs.find(r=>r.name)||{}).name || 'Unnamed golfer',
+    return { id, name: (rs.find(r=>r.name)||{}).name || null,
              best: Math.max(...rs.map(r=>r.score)), n: rs.length,
              gain: rs.length>=6 ? avg(last)-avg(first) : null };
-  });
+  })
+  /* ── THE BOARD IS FOR NAMED GOLFERS ─────────────────────────────────────────
+     A row reading "Unnamed golfer" is not a competitor, it is a blank in a list,
+     and a list of blanks makes the whole board look abandoned. Filtering on a NAME
+     rather than clearing the table also means this never needs clearing again —
+     and it turns the empty state into the ask: put your name in to appear here.
+
+     ⚠️ HIDDEN, NOT DELETED. Those anonymous rows hold 8 of the 10 strike ratings
+     in the entire database — the only data that can prove or kill the hum/strike
+     claim. They stay in Supabase and stay in the percentile. They are just not
+     names on a scoreboard.                                                      */
+  .filter(p => p.name);
 
   const tb=document.getElementById('allRows'); tb.innerHTML='';
   players.sort((a,b)=>b.best-a.best).slice(0,20).forEach((p,i)=>{
@@ -1343,7 +1378,7 @@ async function paintAll(){
       '</td><td><b>'+p.best.toFixed(0)+'</b></td><td>'+p.n+'</td>';
     tb.appendChild(tr);
   });
-  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No hums yet.</td></tr>';
+  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">Nobody has added a name yet. Add yours and you are on the board.</td></tr>';
 
   const ib=document.getElementById('impRows'); ib.innerHTML='';
   const imp=players.filter(p=>p.gain!=null).sort((a,b)=>b.gain-a.gain).slice(0,10);
