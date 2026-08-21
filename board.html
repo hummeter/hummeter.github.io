@@ -158,8 +158,15 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
              trap we just removed, rebuilt by accident. Small text rather than a
              full-width button: easy to find, but it does not compete with the numbers
              for the eye. -->
-        <span id="gateSkip" style="flex:0 0 auto;font-size:13px;color:var(--dim);
-          text-decoration:underline;cursor:pointer;padding:4px 0">Skip</span>
+        <!-- A REAL BUTTON, not a footnote. Underlined 13px text is a link you have to
+             aim at, and nobody aims with a club in one hand. This clears the 44pt iOS
+             tap minimum and is styled like the secondary buttons everywhere else in the
+             app, so it reads as pressable at a glance. Still grey rather than green: it
+             should be easy to hit on purpose and hard to hit by accident. -->
+        <button type="button" id="gateSkip" style="flex:0 0 auto;font:inherit;font-size:15px;
+          font-weight:700;color:var(--ink);cursor:pointer;padding:14px 22px;
+          border:1px solid #2b3950;border-radius:12px;background:#1b2433;
+          line-height:1;white-space:nowrap;-webkit-tap-highlight-color:transparent">Skip →</button>
       </div>
       <div class="hint" style="margin-top:2px">Your score is ready — one tap and it’s yours.</div>
       <div class="strike" id="strike" style="margin-top:14px"></div>
