@@ -1,0 +1,242 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hum Meter — Coach</title>
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     THE COACH VIEW — the owner's read on the whole dataset.
+
+     Brixton had no way to see his own data. Every question about it ("how many
+     strike ratings do we have?", "does the correlation hold?") required somebody
+     to hand-query Supabase, which is precisely why a 14% capture rate went
+     unnoticed for a fortnight. A number nobody can see is a number nobody fixes.
+
+     ⚠️ THE RULE THIS PAGE IS BUILT ON: never show a finding the data cannot carry.
+     Ten pairs is an anecdote and it must SAY SO. The temptation with a dataset
+     built to prove a claim is to render the claim; the whole value here is that it
+     can also kill it. So every panel prints its own n, and anything under the bar
+     renders as "not enough yet" rather than a confident-looking chart.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+:root{--bg:#0b0f14;--card:#141a23;--line:#1e2733;--ink:#eef3f9;--dim:#8ea3bd;
+ --go:#3ef2a0;--ok:#7fd4ff;--warn:#ffc857;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:15px/1.5 -apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif;
+ padding:20px 16px 60px;max-width:820px;margin:0 auto}
+h1{font-size:24px;letter-spacing:-.02em;margin:0 0 2px}
+.sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.card>b{font-size:13px;display:block}
+.hint{color:var(--dim);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.m{background:#0f1620;border:1px solid var(--line);border-radius:10px;padding:12px}
+.m b{display:block;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.m span{font-size:26px;font-weight:800;letter-spacing:-.02em}
+canvas{width:100%;display:block}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th{text-align:left;color:var(--dim);font-size:11px;text-transform:uppercase;
+ letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:8px 4px;border-bottom:1px solid #131b26}
+.big{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.35}
+.warn{color:var(--warn)} .go{color:var(--go)} .bad{color:var(--bad)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;
+ background:#0f1620;border:1px solid var(--line);color:var(--dim);margin-left:6px}
+</style>
+
+<h1>Coach</h1>
+<div class="sub" id="stamp">loading…</div>
+
+<div class="card">
+  <div class="grid">
+    <div class="m"><b>Hums</b><span id="kHums">—</span></div>
+    <div class="m"><b>Golfers</b><span id="kPlayers">—</span></div>
+    <div class="m"><b>Rated</b><span id="kRated">—</span></div>
+    <div class="m"><b>Capture</b><span id="kCap">—</span></div>
+  </div>
+  <div class="hint" id="capNote" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <b>Does a better hum mean a better strike?</b>
+  <div class="hint" id="corrN">—</div>
+  <canvas id="scatter" height="300" style="margin-top:10px"></canvas>
+  <div class="big" id="verdict" style="margin-top:12px">—</div>
+  <div class="hint" id="verdictWhy" style="margin-top:4px"></div>
+</div>
+
+<div class="card">
+  <b>Mean strike, by hum band</b>
+  <div class="hint">The same question without a regression line — harder to fool yourself with.</div>
+  <table><thead><tr><th>Hum score</th><th>Shots</th><th>Avg strike</th><th></th></tr></thead>
+  <tbody id="bandRows"></tbody></table>
+</div>
+
+<div class="card">
+  <b>Where the hum breaks, relative to the ball</b>
+  <div class="hint">Negative = before impact. This column exists in no other dataset.</div>
+  <canvas id="cracks" height="150" style="margin-top:10px"></canvas>
+  <div class="hint" id="crackNote" style="margin-top:8px">—</div>
+</div>
+
+<div class="card">
+  <b>Golfers</b>
+  <table><thead><tr><th>Name</th><th>Hums</th><th>Best</th><th>Rated</th><th>First 3 → last 3</th></tr></thead>
+  <tbody id="pRows"></tbody></table>
+</div>
+
+<script>
+const CLOUD={url:'https://dbuyjntbpqbimkuewegg.supabase.co/rest/v1',
+  key:'sb_publishable_BbZCc_Yblqrrc-aV6-5ysQ_ooAkGngs',table:'hums'};
+const $=id=>document.getElementById(id);
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+function pearson(x,y){
+  if(x.length<3) return null;
+  const mx=mean(x),my=mean(y);
+  const num=x.reduce((s,_,i)=>s+(x[i]-mx)*(y[i]-my),0);
+  const den=Math.sqrt(x.reduce((s,v)=>s+(v-mx)**2,0)*y.reduce((s,v)=>s+(v-my)**2,0));
+  return den?num/den:null;
+}
+const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+(async function(){
+  const r = await fetch(`${CLOUD.url}/${CLOUD.table}?select=*&limit=5000`,
+    {headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+  const all = (await r.json()).filter(x=>x.source!=='wiring-test-ignore');
+  $('stamp').textContent = all.length+' rows · '+new Date().toLocaleString();
+
+  const rated = all.filter(x=>x.strike!=null);
+  const players = new Set(all.map(x=>x.player_id));
+  $('kHums').textContent=all.length; $('kPlayers').textContent=players.size;
+  $('kRated').textContent=rated.length;
+  const cap = all.length?Math.round(100*rated.length/all.length):0;
+  $('kCap').textContent=cap+'%';
+  $('kCap').className = cap<40?'bad':cap<70?'warn':'go';
+  /* Capture rate is the top-line number on this page on purpose: every other panel
+     is downstream of it, and it is the one thing a product change can move. */
+  $('capNote').innerHTML = cap>=60
+    ? 'Healthy. Most hums are arriving with a strike attached.'
+    : '<span class="warn"><b>Capture is the bottleneck.</b></span> Every unrated hum is a '
+      +'row that can never answer the question this app exists to ask.';
+
+  // ── SCATTER ────────────────────────────────────────────────────────────────
+  const X=rated.map(x=>x.score), Y=rated.map(x=>+x.strike);
+  const rr=pearson(X,Y);
+  $('corrN').textContent = rated.length+' rated shots'+
+    (rated.length<25?' — an anecdote, not a finding. Needs ~25 before the line means anything.':'');
+  drawScatter(X,Y,rr);
+
+  if(rated.length<25){
+    $('verdict').innerHTML='Not enough yet <span class="tag">n='+rated.length+'</span>';
+    $('verdictWhy').textContent='Holding the verdict until the sample can carry one. '+
+      (rr!=null?'The current lean is r='+rr.toFixed(2)+', which at this n is noise.':'');
+  } else {
+    const s = rr>=.5?['Strong support','go']:rr>=.25?['Leans yes','ok']:rr>-.25?['No relationship','warn']:['Runs backwards','bad'];
+    $('verdict').innerHTML='<span class="'+s[1]+'">'+s[0]+'</span> <span class="tag">r='+rr.toFixed(2)+' · n='+rated.length+'</span>';
+    $('verdictWhy').textContent = rr>=.25
+      ? 'Steadier hums are coming with better strikes.'
+      : 'The data does not show it. That is worth knowing, and worth saying out loud.';
+  }
+
+  // ── BANDS: the same question, no regression line to hide behind ─────────────
+  const bands=[[0,60,'under 60'],[60,70,'60–70'],[70,85,'70–85'],[85,101,'85+']];
+  $('bandRows').innerHTML = bands.map(([lo,hi,lbl])=>{
+    const g=rated.filter(x=>x.score>=lo&&x.score<hi);
+    if(!g.length) return `<tr><td>${lbl}</td><td colspan="3" class="hint">no shots</td></tr>`;
+    const m=mean(g.map(x=>+x.strike));
+    const w=Math.round(m*10);
+    return `<tr><td>${lbl}</td><td>${g.length}</td><td><b>${m.toFixed(1)}</b></td>`+
+      `<td><div style="height:7px;border-radius:4px;background:var(--go);width:${w}%;opacity:.75"></div></td></tr>`;
+  }).join('');
+
+  // ── THE THRESHOLD — the retention hook, but only when it is real ───────────
+  if(rated.length>=25){
+    let best=null;
+    for(let t=55;t<=90;t+=5){
+      const hi=rated.filter(x=>x.score>=t).map(x=>+x.strike);
+      const lo=rated.filter(x=>x.score< t).map(x=>+x.strike);
+      if(hi.length<5||lo.length<5) continue;
+      const d=mean(hi)-mean(lo);
+      if(!best||d>best.d) best={t,d,hi:mean(hi),lo:mean(lo),n:hi.length};
+    }
+    if(best&&best.d>0.5) $('verdictWhy').textContent +=
+      `  Above ${best.t}, strikes average ${best.hi.toFixed(1)} vs ${best.lo.toFixed(1)} below — a ${best.d.toFixed(1)} point swing.`;
+  }
+
+  // ── CRACK TIMING ───────────────────────────────────────────────────────────
+  const rel=[]; all.forEach(x=>{ if(Array.isArray(x.crack_rel)) rel.push(...x.crack_rel); });
+  drawCracks(rel);
+  const before=rel.filter(v=>v<0).length;
+  const over=window.__crackOver||0;
+  $('crackNote').textContent = rel.length<10
+    ? `Only ${rel.length} cracks logged with an impact to measure from. Needs more swing hums.`
+    : `${rel.length} cracks. ${Math.round(100*before/rel.length)}% land BEFORE the ball`+
+      (before/rel.length>0.6?' — the break is in the transition, not the strike.':'.')+
+      (over?` ${over} fell outside ±5s and are not drawn.`:'');
+
+  // ── GOLFERS ────────────────────────────────────────────────────────────────
+  const by={};
+  all.forEach(x=>{ const k=x.name?'n:'+x.name.trim().toLowerCase():'d:'+x.player_id;
+    (by[k]=by[k]||[]).push(x); });
+  $('pRows').innerHTML = Object.values(by)
+    .sort((a,b)=>b.length-a.length).map(rs=>{
+      rs.sort((a,b)=>a.at<b.at?-1:1);
+      const nm=(rs.find(x=>x.name)||{}).name||'anonymous';
+      const rt=rs.filter(x=>x.strike!=null).length;
+      let gain='<span class="hint">needs 6</span>';
+      if(rs.length>=6){
+        const g=mean(rs.slice(-3).map(x=>x.score))-mean(rs.slice(0,3).map(x=>x.score));
+        gain=`<span class="${g>=0?'go':'bad'}">${g>=0?'+':''}${g.toFixed(1)}</span>`;
+      }
+      return `<tr><td>${esc(nm)}</td><td>${rs.length}</td><td>${Math.max(...rs.map(x=>x.score)).toFixed(0)}</td>`+
+             `<td>${rt}</td><td>${gain}</td></tr>`;
+    }).join('');
+
+  function drawScatter(X,Y,rr){
+    const c=$('scatter'), d=devicePixelRatio||1, W=c.clientWidth, Hh=300;
+    c.width=W*d; c.height=Hh*d; const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+    const L=34,B=26,R=8,T=8;
+    g.fillStyle='#0f1620'; g.fillRect(0,0,W,Hh);
+    const px=v=>L+(v/100)*(W-L-R), py=v=>Hh-B-(v/10)*(Hh-B-T);
+    g.strokeStyle='#1a2432'; g.fillStyle='#5b6f88'; g.font='10px -apple-system,system-ui';
+    for(let v=0;v<=10;v+=2){ const y=py(v); g.beginPath(); g.moveTo(L,y); g.lineTo(W-R,y); g.stroke();
+      g.textAlign='right'; g.textBaseline='middle'; g.fillText(v,L-6,y); }
+    for(let v=0;v<=100;v+=25){ const x=px(v); g.beginPath(); g.moveTo(x,T); g.lineTo(x,Hh-B); g.stroke();
+      g.textAlign='center'; g.textBaseline='top'; g.fillText(v,x,Hh-B+6); }
+    g.textAlign='center'; g.fillText('hum score →',W/2,Hh-12);
+    g.save(); g.translate(11,Hh/2); g.rotate(-Math.PI/2); g.fillText('strike',0,0); g.restore();
+    if(X.length>=3&&rr!=null){   // least-squares line, drawn dashed so it reads as a claim
+      const mx=mean(X),my=mean(Y);
+      const b=X.reduce((s,_,i)=>s+(X[i]-mx)*(Y[i]-my),0)/X.reduce((s,v)=>s+(v-mx)**2,0);
+      g.setLineDash([6,5]); g.strokeStyle='rgba(62,242,160,.55)'; g.lineWidth=2;
+      g.beginPath(); g.moveTo(px(0),py(my+b*(0-mx))); g.lineTo(px(100),py(my+b*(100-mx))); g.stroke();
+      g.setLineDash([]);
+    }
+    X.forEach((v,i)=>{ g.beginPath(); g.arc(px(v),py(Y[i]),5,0,7); 
+      g.fillStyle='rgba(127,212,255,.85)'; g.fill(); });
+  }
+
+  function drawCracks(rel){
+    const c=$('cracks'), d=devicePixelRatio||1, W=c.clientWidth, Hh=150;
+    c.width=W*d; c.height=Hh*d; const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
+    g.fillStyle='#0f1620'; g.fillRect(0,0,W,Hh);
+    /* ⚠️ CLAMPING INTO THE END BINS INVENTS A SPIKE. Everything past the range piled
+       into the last bar and read as "most cracks happen 1.5s after the ball", which is
+       not a finding, it is the axis. Out-of-range cracks are counted separately and
+       reported as a number instead of drawn as a bar. */
+    const LOW=-5,HIGH=5,NB=20, bins=new Array(NB).fill(0);   // p5..p95 of the real data is -6.6..+5.2
+    let over=0;
+    rel.forEach(v=>{ if(v<LOW||v>HIGH){ over++; return; }
+      bins[Math.min(NB-1,Math.floor((v-LOW)/(HIGH-LOW)*NB))]++; });
+    window.__crackOver = over;
+    const mx=Math.max(1,...bins), bw=(W-20)/NB;
+    bins.forEach((n,i)=>{ const h=(n/mx)*(Hh-42);
+      g.fillStyle = (LOW+(i+.5)*(HIGH-LOW)/NB)<0 ? 'rgba(255,200,87,.8)' : 'rgba(127,212,255,.8)';
+      g.fillRect(10+i*bw+1,Hh-26-h,bw-2,h); });
+    const zx=10+((0-LOW)/(HIGH-LOW))*(W-20);
+    g.strokeStyle='#ff6b6b'; g.lineWidth=2; g.beginPath(); g.moveTo(zx,6); g.lineTo(zx,Hh-26); g.stroke();
+    g.fillStyle='#ff6b6b'; g.font='700 10px -apple-system,system-ui'; g.textAlign='center';
+    g.fillText('THE BALL',zx,Hh-12);
+    g.fillStyle='#5b6f88'; g.font='10px -apple-system,system-ui';
+    g.textAlign='left';  g.fillText(LOW+'s',10,Hh-12);
+    g.textAlign='right'; g.fillText('+'+HIGH+'s',W-10,Hh-12);
+  }
+})();
+</script>

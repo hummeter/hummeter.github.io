@@ -81,6 +81,10 @@ input{width:100%;padding:12px;border-radius:10px;background:#0f1620;border:1px s
   color:var(--ink);font:inherit}
 .spark{width:100%;height:80px;display:block}
 .big{font-size:30px;font-weight:800;letter-spacing:-.02em}
+#res.reveal{animation:revealCard .34s cubic-bezier(.2,.8,.3,1)}
+#res.reveal .score{animation:revealScore .5s cubic-bezier(.2,.9,.3,1)}
+@keyframes revealCard{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes revealScore{0%{opacity:0;transform:scale(.72)}60%{transform:scale(1.06)}100%{opacity:1;transform:none}}
 code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
 </style></head><body>
 
@@ -124,6 +128,46 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
          single visit forever, for one visit's worth of value. -->
     <div class="hint" id="gohint" style="margin-top:10px;text-align:center">It stops on its own.</div>
 
+    <!-- ── THE GATE ────────────────────────────────────────────────────────────
+         ⚠️ THE ORDER OF THESE TWO QUESTIONS IS THE WHOLE EXPERIMENT.
+
+         The strike buttons used to sit UNDERNEATH the score. A golfer saw 96 ELITE
+         and then rated the strike, so the app told them what to think before it
+         asked. Every pair collected that way is contaminated: when hum and strike
+         eventually move together, there is no way to show we found that rather than
+         caused it — and that chart is meant to carry his name.
+
+         So the score is withheld until the strike is in. Same two numbers, one of
+         them now honest. It is the blind-tasting rule: show the price and the
+         expensive bottle always wins.
+
+         The side effect is the reason it also works commercially — the score becomes
+         the REWARD for answering, instead of a chore after the payoff. Capture was
+         14%.                                                                        -->
+    <div class="card" id="gate" style="display:none">
+      <b style="font-size:17px" id="gateQ">How’d you strike it?</b>
+      <div class="hint" style="margin-top:4px">Your score is ready — this first, so the
+        two numbers stay independent.</div>
+      <!-- His scale, verbatim: 0 terrible, under 5 fat, 8 a pretty good strike,
+           10 perfectly flush. The anchors matter more than the buttons - "7 or 8?"
+           is unanswerable without them, and an unanswerable question gets skipped,
+           and a skipped rating is a missing row in the only dataset that matters. -->
+      <!-- Four rows, not two columns. A golfer is matching a shot they just hit
+           against a description, and a description is a sentence - stacked, they scan;
+           side by side, they collide. His wording throughout: the anchors are outcomes
+           ("would be on the putting green"), not adjectives, which is what makes a
+           number pickable in two seconds with a club still in your hand. -->
+      <table class="skey">
+        <tr><td>0</td><td>borderline chunk / whiff</td></tr>
+        <tr><td>5</td><td>20 yards short of the green, or over it</td></tr>
+        <tr><td>8</td><td>solid strike — would be on the putting green</td></tr>
+        <tr><td>10</td><td>perfectly flush</td></tr>
+      </table>
+      <div class="strike" id="strike"></div>
+      <button class="btn ghost" id="gateSkip" style="margin-top:12px">
+        I didn’t hit a ball — show my score</button>
+    </div>
+
     <div class="card" id="res" style="display:none">
       <button id="sendrec" style="width:100%;margin-bottom:10px;padding:12px;border:0;
         border-radius:10px;background:#2a3550;color:#cfe0ff;font:inherit;font-size:15px">
@@ -137,26 +181,8 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
         <div class="m"><b>Through the ball</b><span id="m2">—</span></div>
         <div class="m"><b>Cracks</b><span id="m3">—</span></div>
       </div>
-      <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
-        <b style="font-size:13px">How was that strike?</b>
-        <!-- His scale, verbatim: 0 terrible, under 5 fat, 8 a pretty good strike,
-             10 perfectly flush. The anchors matter more than the buttons - "7 or 8?"
-             is unanswerable without them, and an unanswerable question gets skipped,
-             and a skipped rating is a missing row in the only dataset that matters. -->
-        <!-- Four rows, not two columns. A golfer is matching a shot they just hit
-             against a description, and a description is a sentence - stacked, they scan;
-             side by side, they collide. His wording throughout: the anchors are outcomes
-             ("would be on the putting green"), not adjectives, which is what makes a
-             number pickable in two seconds with a club still in your hand. -->
-        <table class="skey">
-          <tr><td>0</td><td>borderline chunk / whiff</td></tr>
-          <tr><td>5</td><td>20 yards short of the green, or over it</td></tr>
-          <tr><td>8</td><td>solid strike — would be on the putting green</td></tr>
-          <tr><td>10</td><td>perfectly flush</td></tr>
-        </table>
-        <div class="strike" id="strike"></div>
-        <div class="hint" id="strikeDone" style="margin-top:8px;display:none"></div>
-      </div>
+      <div class="hint" id="strikeDone" style="margin-top:14px;display:none;
+        border-top:1px solid var(--line);padding-top:14px"></div>
       <!-- SHARE — pulled out on purpose, 2026-08-19. Brixton on the You-vs-Brixton
            card: "I just don't think that's something people are going to share." He is
            probably right, and a share button nobody taps is worse than none: it takes up
@@ -1231,7 +1257,10 @@ function showResult(s){
       : s.through.survived ? 'held it ✓' : 'stopped at the ball';
   document.getElementById('m3').textContent = s.cracks.length
       ? s.cracks.length+' · first '+s.cracks[0].at.toFixed(1)+'s' : 'none';
-  document.getElementById('res').style.display='';
+  /* The score is fully rendered above but stays hidden behind the gate. Computing
+     it now and revealing it later is deliberate: the reveal has to be instant, or
+     the "answer first" trade feels like a tax instead of a swap. */
+  document.getElementById('res').style.display='none';
 
   pendingHum = {
     hum_id: uid(), player_id: ME, name: NAME || null,
@@ -1257,7 +1286,36 @@ function showResult(s){
     hs.style.display='';
   Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
   if(document.getElementById('card')) drawShareCard(s);
+
+  /* ONLY ASK ABOUT A STRIKE WHEN A STRIKE HAPPENED. The impact detector already
+     knows: a golf strike is a sharp broadband transient and a sofa is not. Asking
+     "how'd you strike it?" of someone testing a steady note in their kitchen is a
+     confusing question with no honest answer, and a confusing question is how you
+     teach people to dismiss the one that matters. No impact heard → straight to
+     the score. */
+  if(s.impact) openGate(); else revealScore();
+}
+
+function openGate(){
   buildStrike();
+  document.getElementById('strikeDone').style.display='none';
+  /* "Hum again" sits between the trace and the question, and a competing button
+     ABOVE the ask is just a skip button with better placement. While the gate is
+     open there is exactly one thing to do. */
+  ['go','gohint'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  const g=document.getElementById('gate');
+  g.style.display='';
+  g.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function revealScore(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('go').style.display='';
+  document.getElementById('gohint').style.display='';
+  const r=document.getElementById('res');
+  r.style.display='';
+  r.classList.remove('reveal'); void r.offsetWidth; r.classList.add('reveal');
+  r.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 /* ── THE STRIKE RATING ────────────────────────────────────────────────────────
@@ -1267,7 +1325,6 @@ function showResult(s){
    it." Self-rating is noisy per shot and perfectly fine in aggregate.            */
 function buildStrike(){
   const wrap=document.getElementById('strike'); wrap.innerHTML='';
-  document.getElementById('strikeDone').style.display='none';
   for(let i=0;i<=10;i++){
     const b=document.createElement('button');
     b.textContent = i;
@@ -1281,10 +1338,14 @@ function buildStrike(){
         const d=document.getElementById('strikeDone');
         d.style.display=''; d.innerHTML = strikeInsight(i);
       }
+      // the answer buys the score
+      setTimeout(revealScore, 160);
     };
     wrap.appendChild(b);
   }
 }
+{ const sk=document.getElementById('gateSkip');
+  if(sk) sk.onclick = () => revealScore(); }
 
 /* ── WHAT TO SAY BACK WHEN THEY RATE A STRIKE ────────────────────────────────
    "Logged." is a receipt, not an answer. The pairing they just handed over - this hum
