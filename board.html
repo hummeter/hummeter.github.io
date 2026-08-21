@@ -279,8 +279,44 @@ const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 const IDK='humBoardId', NMK='humBoardName';
 function uid(){ return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
   (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c/4).toString(16)); }
+/* ── THE HANDOFF ──────────────────────────────────────────────────────────────
+   ⚠️ THE ESCAPE HATCH WE BUILT TO GET PEOPLE INTO SAFARI WAS MINTING A NEW PERSON
+   EVERY TIME THEY USED IT. Instagram's webview and Safari have entirely separate
+   localStorage, so hopping out of Instagram is indistinguishable from a first
+   visit: fresh id, no name, "add your name" again. Brixton, 2026-08-21: "it's
+   making me update my name... it shows Brixton two or three times." Two Brixton
+   player_ids and four anonymous ones in the database, several minted the same day.
+
+   So the jump carries the identity with it in the hash.
+
+   TWO GUARDS, because a link that hands over an identity is a link that can steal
+   one. Adopt only if BOTH hold:
+     · this browser has no hums of its own — an established player is never
+       overwritten by a link someone sent them
+     · the token is under 5 minutes old — long enough for a tab to open, far too
+       short to survive being pasted into a group chat tomorrow
+   The hash is stripped immediately either way, so it never gets shared onward
+   from the address bar.                                                          */
+const HANDOFF_MS = 5*60*1000;
+function readHandoff(){
+  try{
+    const m = /[#&]h=([^&]+)/.exec(location.hash || ''); if(!m) return null;
+    history.replaceState(null,'',location.pathname);          // strip it on sight
+    const [id, ts, ...nm] = decodeURIComponent(m[1]).split('|');
+    if(!id || !ts || Date.now() - Number(ts) > HANDOFF_MS) return null;
+    return { id, name: nm.join('|') || '' };
+  }catch(e){ return null; }
+}
+const _hand = readHandoff();
+if(_hand && !localStorage.getItem('humBoardHums')){
+  localStorage.setItem(IDK, _hand.id);
+  if(_hand.name) localStorage.setItem(NMK, _hand.name);
+}
 let ME = localStorage.getItem(IDK) || (localStorage.setItem(IDK, uid()), localStorage.getItem(IDK));
 let NAME = localStorage.getItem(NMK) || '';
+function handoffUrl(base){
+  return base + '#h=' + encodeURIComponent([ME, Date.now(), NAME].join('|'));
+}
 function renderWho(){
   // Show a name only once there IS one. "Unnamed golfer · 5f716017" told the user two
   // things they did not ask for and neither of which helps them.
@@ -453,7 +489,7 @@ function showBlocker(){
 
   const jump = () => {
     location.href = ios
-      ? 'x-safari-' + url
+      ? 'x-safari-' + handoffUrl(url)
       : 'intent://' + url.replace(/^https?:\/\//,'') +
         '#Intent;scheme=https;package=com.android.chrome;end';
   };
@@ -486,7 +522,7 @@ function showBlocker(){
   }catch(e){ /* private mode: just leave the button */ }
   const c = document.getElementById('igcopy');
   if(c) c.onclick = async () => {
-    try{ await navigator.clipboard.writeText(url); c.textContent = 'Copied — paste it in ' + app; }
+    try{ await navigator.clipboard.writeText(handoffUrl(url)); c.textContent = 'Copied — paste it in ' + app; }
     catch(e){ c.textContent = url.replace(/^https?:\/\//,''); }
   };
   document.getElementById('go').style.display='none';
@@ -1439,9 +1475,19 @@ async function paintAll(){
   document.getElementById('allAvg').textContent = rows.length
     ? (rows.reduce((s,r)=>s+r.score,0)/rows.length).toFixed(0) : '—';
 
+  /* ⚠️ GROUP NAMED PLAYERS BY NAME, NOT BY DEVICE. A person is not a browser
+     profile. Two Brixtons were already on this board — one from Safari, one from
+     the Instagram webview — and to him that is obviously one golfer. The handoff
+     above stops NEW splits; grouping by name heals the ones already recorded, and
+     covers the ordinary case of somebody using their phone and their iPad.
+     Anonymous rows still group by device: with no name there is nothing to match. */
   const by={};
-  rows.forEach(r=>{ (by[r.player_id] = by[r.player_id] || []).push(r); });
-  const players = Object.entries(by).map(([id,rs])=>{
+  rows.forEach(r=>{
+    const k = r.name ? 'n:'+r.name.trim().toLowerCase() : 'd:'+r.player_id;
+    (by[k] = by[k] || []).push(r);
+  });
+  const players = Object.entries(by).map(([key,rs])=>{
+    const id = rs.some(r=>r.player_id===ME) ? ME : rs[0].player_id;
     rs.sort((a,b)=> a.at<b.at?-1:1);
     const first=rs.slice(0,3), last=rs.slice(-3);
     const avg=a=>a.reduce((s,r)=>s+r.score,0)/a.length;
