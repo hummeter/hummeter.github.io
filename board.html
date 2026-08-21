@@ -226,7 +226,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       <b style="font-size:13px">Where you lose it</b>
       <div class="hint" style="margin-top:2px">Every crack you've had, lined up on the ball.</div>
       <canvas class="spark" id="tension" style="height:120px"></canvas>
-      <div class="hint" id="tensionText" style="margin-top:8px">Needs a few swing hums.</div>
+      <div class="hint" id="tensionText" style="margin-top:8px">Hum through three swings and your breaks line up here.</div>
     </div>
     <div class="card">
       <b style="font-size:13px">Your last 10</b>
@@ -235,7 +235,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card" id="strikeCard">
       <b style="font-size:13px">Does a better hum mean a better strike?</b>
-      <div class="hint" id="corrText" style="margin-top:6px">Rate a few strikes and this fills in.</div>
+      <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll answer this for you.</div>
       <canvas class="spark" id="scatter" style="height:140px"></canvas>
     </div>
   </section>
@@ -250,8 +250,11 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       <div class="hint" id="allNote" style="margin-top:10px"></div>
       <div id="nameAsk" style="display:none;margin-top:12px;padding:12px;border-radius:10px;
            background:#101c18;border:1px solid #1e4436">
-        <b style="font-size:13px;color:var(--go)">You are on the board as “Unnamed”.</b>
-        <div class="hint" style="margin-top:2px">Add a name and it shows up next to your score.</div>
+        <!-- ⚠️ THIS SAID "You are on the board as Unnamed" — which stopped being true
+             the moment the board started filtering to named golfers. It was promising
+             a row that does not exist. -->
+        <b style="font-size:13px;color:var(--go)">You’re not on the board yet.</b>
+        <div class="hint" style="margin-top:2px">Add a name and your scores show up here.</div>
         <button class="btn ghost" id="addName" style="margin-top:10px">Add your name</button>
       </div>
     </div>
@@ -273,16 +276,19 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
        Add to Home Screen: a home-screen web app keeps its permission, and it also opens
        without a URL bar, which is a better experience for a golfer standing over a ball.
        Shown quietly, after they have already used it once. -->
+  <!-- Opened with "Tired of the microphone prompt?" — a line that names an
+       annoyance the visitor may not have registered yet, and then sits under every
+       screen forever repeating it. Benefit first, once they have earned it. -->
   <p class="foot" id="hsHint" style="display:none">
-    Tired of the microphone prompt? Tap <b>Share</b> → <b>Add to Home Screen</b>.
-    It opens like an app and stops asking.
+    <b>Add it to your Home Screen</b> — <b>Share</b> → <b>Add to Home Screen</b>.
+    Opens like a real app, and skips the mic prompt.
   </p>
 </div>
 
 <nav>
   <button class="on" data-v="hum">HUM</button>
   <button data-v="me">MY BOARD</button>
-  <button data-v="all">EVERYONE</button>
+  <button data-v="all">LEADERBOARD</button>
 </nav>
 
 <script src="hum-core.js"></script>
@@ -511,14 +517,25 @@ function showBlocker(){
     ? '<div class="igesc"><h2>Needs a secure connection</h2>' +
       '<p>This page can only reach the microphone over https.</p></div>'
     : ios
+    /* ⚠️ HE WATCHED A STRANGER'S FIRST SCREEN AND IT WAS A TROUBLESHOOTING DIALOG.
+       "Two taps and you're in" answers a question nobody has asked yet, because they
+       do not know what they are getting INTO. The pitch has to come before the
+       turnstile: one line of what this is, then the way in. Same two steps, but now
+       they are the price of something rather than the whole first impression.
+
+       "Copy link instead" is gone from view. Three options on a two-step instruction
+       is a menu, and a menu at the door is a reason to leave. It is still there for
+       anyone genuinely stuck — revealed after 12 seconds, which nobody who succeeded
+       will ever see. */
     ? '<div class="igesc"><div class="pt">↗</div>' +
-      '<h2>Two taps and you’re in</h2>' +
-      '<p>Instagram’s built-in browser blocks the microphone.</p>' +
+      '<h2>Hum through your swing.<br>See where it breaks.</h2>' +
+      '<p>Where your hum breaks is where your tension is. It needs your mic — and ' +
+        'Instagram’s browser won’t allow that, so:</p>' +
       '<ul class="steps2">' +
         '<li><span class="num">1</span><span>Tap <span class="kbd">⋯</span> at the top right</span></li>' +
         '<li><span class="num">2</span><span>Choose <b>Open in external browser</b></span></li>' +
       '</ul>' +
-      '<button class="btn ghost" id="igcopy" style="margin-top:10px">Copy link instead</button>' +
+      '<button class="btn ghost" id="igcopy" style="margin-top:10px;display:none">Copy the link instead</button>' +
       '</div>'
     : '<div class="igesc"><div class="pt">↗</div>' +
       '<h2>Open in Chrome to start</h2>' +
@@ -562,6 +579,9 @@ function showBlocker(){
       setTimeout(jump, 350);
     }
   }catch(e){ /* private mode: just leave the button */ }
+  // the stuck-visitor fallback, and only for them
+  const late = document.getElementById('igcopy');
+  if(late && ios) setTimeout(()=>{ late.style.display=''; }, 12000);
   const c = document.getElementById('igcopy');
   if(c) c.onclick = async () => {
     try{ await navigator.clipboard.writeText(handoffUrl(url)); c.textContent = 'Copied — paste it in ' + app; }
@@ -1438,7 +1458,7 @@ function paintMe(){
            -(last.slice(0,h).reduce((s,x)=>s+x,0)/h);
     document.getElementById('myTrend').textContent=(d>=0?'+':'')+d.toFixed(1)+' pts';
     document.getElementById('myTrend').style.color = d>=0?'var(--go)':'var(--bad)';
-  } else document.getElementById('myTrend').textContent='need 4 hums';
+  } else document.getElementById('myTrend').textContent='4 more hums';
 
   const tb=document.getElementById('myRows'); tb.innerHTML='';
   rows.slice(0,10).forEach(r=>{
@@ -1493,7 +1513,7 @@ function tensionPlot(rows){
 
   const all=[];
   rows.forEach(x=>{ if(Array.isArray(x.crack_rel)) x.crack_rel.forEach(v=>all.push(v)); });
-  if(all.length<3){ txt.textContent='Needs a few swing hums with the ball in them.'; return; }
+  if(all.length<3){ txt.textContent='Hum through three swings and your breaks line up here.'; return; }
 
   const LO=-2.5, HI=1.5;                       // 2.5s before the ball to 1.5s after
   const xOf=t=>28+((Math.max(LO,Math.min(HI,t))-LO)/(HI-LO))*(w-36);
@@ -1534,7 +1554,8 @@ function scatter(rows){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   const w=r.width,h=r.height; g.clearRect(0,0,w,h);
   const txt=document.getElementById('corrText');
-  if(rows.length<5){ txt.textContent='Rate '+(5-rows.length)+' more strikes and this fills in.'; return; }
+  if(rows.length<5){ const k=5-rows.length;
+    txt.textContent='Rate '+k+' more strike'+(k>1?'s':'')+' and I’ll answer this for you.'; return; }
   g.strokeStyle='#1b2735'; g.strokeRect(28,4,w-34,h-24);
   rows.forEach(p=>{
     const x=28+(p.score/100)*(w-34), y=h-20-(p.strike/10)*(h-24);
@@ -1561,9 +1582,7 @@ async function paintAll(){
   const {rows, local} = await Store.everyone();
   document.getElementById('allNote').textContent = local
     ? 'No server connected yet, so this is only the hums recorded on this device.'
-    : rows.length + ' hums measured from ' +
-      new Set(rows.map(r=>r.player_id)).size + ' golfers. The board below shows ' +
-      'everyone who added a name.';
+    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size + ' golfers.';
   document.getElementById('allN').textContent = rows.length;
   document.getElementById('allAvg').textContent = rows.length
     ? (rows.reduce((s,r)=>s+r.score,0)/rows.length).toFixed(0) : '—';
@@ -1607,7 +1626,7 @@ async function paintAll(){
       '</td><td><b>'+p.best.toFixed(0)+'</b></td><td>'+p.n+'</td>';
     tb.appendChild(tr);
   });
-  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">Nobody has added a name yet. Add yours and you are on the board.</td></tr>';
+  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No names up yet. Add yours and you’re first.</td></tr>';
 
   const ib=document.getElementById('impRows'); ib.innerHTML='';
   const imp=players.filter(p=>p.gain!=null).sort((a,b)=>b.gain-a.gain).slice(0,10);
