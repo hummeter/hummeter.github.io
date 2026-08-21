@@ -145,34 +145,36 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
          the REWARD for answering, instead of a chore after the payoff. Capture was
          14%.                                                                        -->
     <div class="card" id="gate" style="display:none">
-      <b style="font-size:17px" id="gateQ">How’d you strike it?</b>
-      <div class="hint" style="margin-top:4px">Your score is ready — this first, so the
-        two numbers stay independent.</div>
+      <!-- ⚠️ ORDER, 2026-08-21, his call: BUTTONS FIRST, KEY UNDERNEATH.
+           The anchors do matter — "7 or 8?" is unanswerable without them, and an
+           unanswerable question gets skipped. But they only have to be VISIBLE, not
+           FIRST. Above the buttons they tax every repeat user with four rows of
+           explanation they already know, on the way to the one thing they came to tap.
+           Reference material goes under the action. -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <b style="font-size:17px" id="gateQ">How’d you strike it?</b>
+        <!-- The skip lives in the HEADER, not at the bottom of the stack. With the key
+             moved down, a skip below it would be buried under everything — which is the
+             trap we just removed, rebuilt by accident. Small text rather than a
+             full-width button: easy to find, but it does not compete with the numbers
+             for the eye. -->
+        <span id="gateSkip" style="flex:0 0 auto;font-size:13px;color:var(--dim);
+          text-decoration:underline;cursor:pointer;padding:4px 0">Skip</span>
+      </div>
+      <div class="hint" style="margin-top:2px">Your score is ready — one tap and it’s yours.</div>
+      <div class="strike" id="strike" style="margin-top:14px"></div>
       <!-- His scale, verbatim: 0 terrible, under 5 fat, 8 a pretty good strike,
-           10 perfectly flush. The anchors matter more than the buttons - "7 or 8?"
-           is unanswerable without them, and an unanswerable question gets skipped,
-           and a skipped rating is a missing row in the only dataset that matters. -->
-      <!-- Four rows, not two columns. A golfer is matching a shot they just hit
-           against a description, and a description is a sentence - stacked, they scan;
-           side by side, they collide. His wording throughout: the anchors are outcomes
+           10 perfectly flush. Four rows, not two columns — a golfer is matching a shot
+           they just hit against a description, and a description is a sentence:
+           stacked, they scan; side by side, they collide. The anchors are outcomes
            ("would be on the putting green"), not adjectives, which is what makes a
            number pickable in two seconds with a club still in your hand. -->
-      <table class="skey">
+      <table class="skey" style="margin-top:14px;border-top:1px solid var(--line);padding-top:4px">
         <tr><td>0</td><td>borderline chunk / whiff</td></tr>
         <tr><td>5</td><td>20 yards short of the green, or over it</td></tr>
         <tr><td>8</td><td>solid strike — would be on the putting green</td></tr>
         <tr><td>10</td><td>perfectly flush</td></tr>
       </table>
-      <div class="strike" id="strike"></div>
-      <!-- ⚠️ AN HONEST SKIP, ALWAYS VISIBLE. Brixton: "what if they don't want to do
-           that?" Right — and the trap fails worse than the miss. Corner someone and
-           they tap 7 to get past you, which injects noise into the exact measurement
-           this exists to make. A missing row is honest; a random row is a lie nothing
-           downstream can detect. The uncontaminated pairing comes from the ORDER, not
-           from compulsion: the score is hidden at the moment of answering, and that is
-           all the blinding needs. Anyone who skips is simply not in the dataset —
-           which is where they already were. -->
-      <button class="btn ghost" id="gateSkip" style="margin-top:12px">Skip — just show my score</button>
     </div>
 
     <div class="card" id="res" style="display:none">
