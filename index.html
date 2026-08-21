@@ -51,6 +51,12 @@ nav button.on{color:var(--accent)}
 .igesc .fb{margin-top:14px;font-size:13px;color:var(--dim);line-height:1.6;display:none}
 .igesc .fb.on{display:block}
 .igesc .fb b{color:var(--ink)}
+/* the two-step, for iOS where the scheme jump is a dead end */
+.steps2{list-style:none;margin:14px 0 0;padding:0}
+.steps2 li{display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:8px;
+  background:#0f1620;border:1px solid var(--line);border-radius:10px;font-size:15px;color:var(--ink)}
+.steps2 .num{flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#06251a;
+  font-weight:800;font-size:12px;display:grid;place-items:center}
 .kbd{display:inline-block;background:#0f1620;border:1px solid var(--line);border-radius:6px;
   padding:0 7px;color:var(--ink);font-weight:800;line-height:1.5}
 .warnbox b{display:block;margin-bottom:4px;color:#ffc857}
@@ -410,15 +416,38 @@ function showBlocker(){
   const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
   const app = ios ? 'Safari' : 'Chrome';
 
+  /* ⚠️ ON iOS THE SCHEME JUMP IS A DEAD END, and a dead hero button is worse than
+     no button. His screen recording, 2026-08-21: he tapped "Open in Safari" FOUR
+     times — "Opening Safari…" every time, nothing every time — then hunted the ⋯
+     menu himself. That is the whole of "it seems super hard to open this link".
+     Apple has closed x-safari-https:// on current iOS. We still FIRE it silently on
+     arrival, because where it works the visitor never sees this card at all — but we
+     no longer advertise it as the way in.
+
+     ⚠️ AND THE MENU ITEM IS NOT CALLED "Open in browser". The same recording shows
+     Instagram's real menu: "Open in external browser". Sending someone hunting for a
+     label that is not there is its own small betrayal of trust.
+
+     Android keeps the button: intent://…package=com.android.chrome genuinely works. */
   document.getElementById('blocker').innerHTML = insecure()
     ? '<div class="igesc"><h2>Needs a secure connection</h2>' +
       '<p>This page can only reach the microphone over https.</p></div>'
+    : ios
+    ? '<div class="igesc"><div class="pt">↗</div>' +
+      '<h2>Two taps and you’re in</h2>' +
+      '<p>Instagram’s built-in browser blocks the microphone.</p>' +
+      '<ul class="steps2">' +
+        '<li><span class="num">1</span><span>Tap <span class="kbd">⋯</span> at the top right</span></li>' +
+        '<li><span class="num">2</span><span>Choose <b>Open in external browser</b></span></li>' +
+      '</ul>' +
+      '<button class="btn ghost" id="igcopy" style="margin-top:10px">Copy link instead</button>' +
+      '</div>'
     : '<div class="igesc"><div class="pt">↗</div>' +
-      '<h2>Open in ' + app + ' to start</h2>' +
+      '<h2>Open in Chrome to start</h2>' +
       '<p>Instagram’s built-in browser blocks the microphone. One tap fixes it.</p>' +
-      '<button class="btn" id="igopen">Open in ' + app + '</button>' +
+      '<button class="btn" id="igopen">Open in Chrome</button>' +
       '<div class="fb" id="igfb">Still here? Tap <span class="kbd">⋯</span> at the ' +
-        '<b>top right</b>, then <b>Open in browser</b>.' +
+        '<b>top right</b>, then <b>Open in external browser</b>.' +
         '<button class="btn ghost" id="igcopy" style="margin-top:10px">Copy link instead</button>' +
       '</div></div>';
 
@@ -431,7 +460,7 @@ function showBlocker(){
 
   const btn = document.getElementById('igopen');
   if(btn) btn.onclick = () => {
-    document.getElementById('igfb').classList.add('on');
+    const fb = document.getElementById('igfb'); if(fb) fb.classList.add('on');
     btn.textContent = 'Opening ' + app + '…';
     jump();
     // If we are still on screen 1.5s later the jump was refused — say so, don't lie.
@@ -547,7 +576,7 @@ function retrack(pcm, sr, hopMs, winN){
 const H = window.HUM, H_ = window.HUM;
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let lastPCM=null, lastSR=44100;
-let ac, stream, an, anF, hp1, hp2, lp1, timer, running=false, hiBand=[], loBand=[], t0=0, heard=false, pcmLog=[], refNote=0, tunedTo=0, lvlLog=[], loudRef=0;
+let ac, stream, an, anF, hp1, hp2, lp1, timer, running=false, hiBand=[], loBand=[], t0=0, heard=false, heardAt=0, pcmLog=[], refNote=0, tunedTo=0, lvlLog=[], loudRef=0;
 
 function fit(){ const r=cv.getBoundingClientRect(), d=devicePixelRatio||1;
   cv.width=r.width*d; cv.height=r.height*d; ctx.setTransform(d,0,0,d,0,0); }
@@ -599,7 +628,7 @@ async function start(){
   const bufF = new Float32Array(anF.fftSize);
   const spec = new Uint8Array(an.frequencyBinCount);
 
-  H.setFrames([]); hiBand=[]; loBand=[]; pcmLog=[]; refNote=0; tunedTo=0; lvlLog=[]; loudRef=0; running=true; heard=false; t0=Date.now();
+  H.setFrames([]); hiBand=[]; loBand=[]; pcmLog=[]; refNote=0; tunedTo=0; lvlLog=[]; loudRef=0; running=true; heard=false; heardAt=0; t0=Date.now();
   const b=document.getElementById('go'); b.classList.add('rec');
   b.textContent='Listening — hum, swing, then stop';
   document.getElementById('res').style.display='none';
@@ -717,6 +746,30 @@ async function start(){
        eagerly and the recorder ends mid-crack and throws away the follow-through, which
        is the half that answers the question. */
     const HUSH_MS = 1800, ARM_MS = 500;
+    /* ── THE SWING IS NOT OVER WHEN THE HUM DIPS ─────────────────────────────
+       Brixton, 2026-08-21, on two range clips: "it gave a score maybe .5 seconds
+       before my swing finished... the scores were GOOD reads, but ideally it
+       would capture full swing."
+
+       The reads were right, so this is not a scoring bug — the RECORDER is
+       leaving early and the follow-through never reaches the scorer. Two ways
+       that happens, and each gets its own floor:
+
+       MIN_HUM_MS — a golf swing from takeaway to a finished follow-through is
+       around two seconds, and the hum is supposed to span all of it. A stop
+       inside that is premature by definition, whatever the audio said. This is
+       the backstop for when impact is never detected at all.
+
+       SWING_TAIL_MS — impact is a LANDMARK INSIDE the hum, never the end of it,
+       and the hum often thins right at the strike because that is the tension
+       being measured. So a dip just after a strike is the most likely moment in
+       the whole recording to be mistaken for silence, and the most expensive one
+       to get wrong: it deletes the half that answers the question. Once a strike
+       has been heard, hold the recorder open past it.
+
+       Both only ever DELAY a stop. Neither can cause the runaway recording the
+       45 s ceiling exists to catch.                                            */
+    const MIN_HUM_MS = 2200, SWING_TAIL_MS = 1300;
     /* WHAT ARMS THE STOP, and why it is not "any pitch".
        Brixton: "if I put the phone down and make a swing five seconds later, you're
        telling me you're not gonna pick up on that."
@@ -729,7 +782,7 @@ async function start(){
     if(!heard){
       const need = Math.round(ARM_MS/H.HOP);
       const recent = H.getFrames().slice(-need);
-      if(recent.length >= need && recent.filter(f=>f.hz).length >= need-1) heard = true;
+      if(recent.length >= need && recent.filter(f=>f.hz).length >= need-1){ heard = true; heardAt = Date.now(); }
     }
     if(heard){
       /* TOLERANT, NOT ABSOLUTE. `tail.every(f=>!f.hz)` demands 1.8 s in which not one
@@ -785,8 +838,17 @@ async function start(){
         const silent = fr.filter(f=>!f.hz).length >= need*0.90;
         return silent && lvlLog[lvlLog.length-1] < loudRef*0.85;
       })();
-      if(tail.length >= need &&
-         (tail.filter(v => v < quietFloor).length >= need*0.85 || quietByPitch)) return stop();
+      const quiet = tail.length >= need &&
+        (tail.filter(v => v < quietFloor).length >= need*0.85 || quietByPitch);
+
+      if(quiet){
+        // too soon after the hum started to be a finished swing
+        if(Date.now() - heardAt < MIN_HUM_MS) return;
+        // a strike was heard recently — the follow-through has not landed yet
+        const imp = H.findImpact(hiBand);
+        if(imp && (hiBand.length - imp.frame) * H.HOP < SWING_TAIL_MS) return;
+        return stop();
+      }
     }
     /* 45 s, not 15. The clock starts when they TAP, and the real sequence is: tap, put
        the phone in the grass, walk to the ball, set up, swing. Fifteen seconds cut that
@@ -981,8 +1043,36 @@ function draw(){
   const fr=H.getFrames(); const v=fr.filter(f=>f.hz);
   const GUT=40;
   if(v.length<2){
+    /* ── THE EMPTY STATE HAS TO TEACH THE READ ────────────────────────────────
+       It used to be four grey rules on a black rectangle — the largest object on
+       the page saying nothing, which is what made the intro screen feel unfinished.
+
+       A first-timer does not yet know what this graph is FOR. Telling them in prose
+       costs a paragraph nobody reads; showing them costs one line. So the idle
+       canvas draws Brixton's own 99 — dead flat, labelled — and the whole read is
+       communicated before they have hummed a note: flat is the goal, and here is
+       the bar. It is the same "beat the pro" mechanic the share card is built on,
+       moved to the moment it actually changes behaviour.
+
+       Drawn dashed and dim so it never reads as THEIR line, and it is gone the
+       instant a real trace exists.                                              */
     ctx.strokeStyle='#182234'; ctx.lineWidth=1;
     for(let i=1;i<5;i++){const y=h*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+
+    const y=Math.round(h*0.5)+0.5, L=54, R=w-14;
+    ctx.save();
+    ctx.setLineDash([7,6]); ctx.lineWidth=2; ctx.strokeStyle='rgba(62,242,160,.42)';
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='700 10px -apple-system,system-ui,sans-serif';
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(62,242,160,.75)'; ctx.fillText('99', 14, y);
+    ctx.textAlign='right';
+    ctx.fillStyle='rgba(62,242,160,.55)'; ctx.fillText('BRIXTON', R, y-13);
+    ctx.textAlign='center';
+    ctx.fillStyle='#5b6f88'; ctx.font='600 11px -apple-system,system-ui,sans-serif';
+    ctx.fillText('Flat line = steady hum. Yours draws here.', w/2, h-16);
+    ctx.restore();
     return;
   }
   const med=H.median(v.map(f=>f.hz));
