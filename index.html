@@ -195,7 +195,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
         <!-- No Hz. "118 Hz" is a fact about physics, not about their golf swing, and
              a row that needs explaining costs more trust than it earns. -->
         <div class="m"><b>Through the ball</b><span id="m2">—</span></div>
-        <div class="m"><b>Cracks</b><span id="m3">—</span></div>
+        <div class="m"><b>Lost it</b><span id="m3">—</span></div>
       </div>
       <div class="hint" id="strikeDone" style="margin-top:14px;display:none;
         border-top:1px solid var(--line);padding-top:14px"></div>
@@ -230,7 +230,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card">
       <b style="font-size:13px">Your last 10</b>
-      <table style="margin-top:8px"><thead><tr><th>When</th><th>Score</th><th>Cracks</th><th>Strike</th></tr></thead>
+      <table style="margin-top:8px"><thead><tr><th>When</th><th>Score</th><th>Lost it</th><th>Strike</th></tr></thead>
       <tbody id="myRows"><tr><td colspan="4" class="hint">No hums yet.</td></tr></tbody></table>
     </div>
     <div class="card" id="strikeCard">
@@ -1281,8 +1281,8 @@ function showResult(s){
   if(s.through && s.through.restrictedAt)
     say = 'You lost the hum right at the ball. That is where you tightened up.';
   else if(s.cracks.length)
-    say = 'Cracked ' + (s.cracks.length===1?'once':s.cracks.length+' times')
-        + ', first at ' + s.cracks[0].at.toFixed(1) + 's. Anything that cracks caps at 75.';
+    say = 'You lost it ' + (s.cracks.length===1?'once':s.cracks.length+' times')
+        + ', first at ' + s.cracks[0].at.toFixed(1) + 's. Lose it once and the score caps at 75.';
   else if(s.through && s.through.survived)
     say = 'Held it through the ball.';
   else say = b[0]==='ELITE' ? 'One line the whole way. Nothing broke.'
@@ -1737,7 +1737,7 @@ function drawShareCard(s){
   g.fillStyle='#e6eef7'; g.font=F(700,40);
   const beat = s.total >= 99;
   const line = beat ? 'Beat him.'
-    : (s.cracks && s.cracks.length) ? 'Cracked ' + (s.cracks.length===1?'once':s.cracks.length+' times') + '.'
+    : (s.cracks && s.cracks.length) ? 'Lost it ' + (s.cracks.length===1?'once':s.cracks.length+' times') + '.'
     : (s.through && !s.through.survived) ? 'Lost it at the ball.'
     : 'Held it the whole way.';
   g.fillText(line, PX, y2);

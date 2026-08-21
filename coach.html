@@ -78,7 +78,7 @@ td{padding:8px 4px;border-bottom:1px solid #131b26}
 </div>
 
 <div class="card">
-  <b>Where the hum breaks, relative to the ball</b>
+  <b>Where golfers lose it, relative to the ball</b>
   <div class="hint">Negative = before impact. This column exists in no other dataset.</div>
   <canvas id="cracks" height="150" style="margin-top:10px"></canvas>
   <div class="hint" id="crackNote" style="margin-top:8px">—</div>
@@ -193,8 +193,8 @@ const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',
   const before=rel.filter(v=>v<0).length;
   const over=window.__crackOver||0;
   $('crackNote').textContent = rel.length<10
-    ? `Only ${rel.length} cracks logged with an impact to measure from. Needs more swing hums.`
-    : `${rel.length} cracks. ${Math.round(100*before/rel.length)}% land BEFORE the ball`+
+    ? `Only ${rel.length} lost hums logged with an impact to measure from. Needs more swing hums.`
+    : `${rel.length} lost hums. ${Math.round(100*before/rel.length)}% land BEFORE the ball`+
       (before/rel.length>0.6?' — the break is in the transition, not the strike.':'.')+
       (over?` ${over} fell outside ±5s and are not drawn.`:'');
 
