@@ -224,9 +224,9 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card" id="tensionCard">
       <b style="font-size:13px">Where you lose it</b>
-      <div class="hint" style="margin-top:2px">Every crack you've had, lined up on the ball.</div>
+      <div class="hint" style="margin-top:2px">Every hum you've broken, and when in the swing you broke it.</div>
       <canvas class="spark" id="tension" style="height:120px"></canvas>
-      <div class="hint" id="tensionText" style="margin-top:8px">Hum through three swings and your breaks line up here.</div>
+      <div class="hint" id="tensionText" style="margin-top:8px">Take three swings and this shows the moment you lose it.</div>
     </div>
     <div class="card">
       <b style="font-size:13px">Your last 10</b>
@@ -235,7 +235,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card" id="strikeCard">
       <b style="font-size:13px">Does a better hum mean a better strike?</b>
-      <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll answer this for you.</div>
+      <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll show you what your hum needs to hit for you to flush it.</div>
       <canvas class="spark" id="scatter" style="height:140px"></canvas>
     </div>
   </section>
@@ -1513,7 +1513,7 @@ function tensionPlot(rows){
 
   const all=[];
   rows.forEach(x=>{ if(Array.isArray(x.crack_rel)) x.crack_rel.forEach(v=>all.push(v)); });
-  if(all.length<3){ txt.textContent='Hum through three swings and your breaks line up here.'; return; }
+  if(all.length<3){ txt.textContent='Take three swings and this shows the moment you lose it.'; return; }
 
   const LO=-2.5, HI=1.5;                       // 2.5s before the ball to 1.5s after
   const xOf=t=>28+((Math.max(LO,Math.min(HI,t))-LO)/(HI-LO))*(w-36);
@@ -1555,7 +1555,8 @@ function scatter(rows){
   const w=r.width,h=r.height; g.clearRect(0,0,w,h);
   const txt=document.getElementById('corrText');
   if(rows.length<5){ const k=5-rows.length;
-    txt.textContent='Rate '+k+' more strike'+(k>1?'s':'')+' and I’ll answer this for you.'; return; }
+    txt.textContent='Rate '+k+' more strike'+(k>1?'s':'')+
+      ' and I’ll show you what your hum needs to hit for you to flush it.'; return; }
   g.strokeStyle='#1b2735'; g.strokeRect(28,4,w-34,h-24);
   rows.forEach(p=>{
     const x=28+(p.score/100)*(w-34), y=h-20-(p.strike/10)*(h-24);
