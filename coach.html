@@ -52,6 +52,14 @@ td{padding:8px 4px;border-bottom:1px solid #131b26}
     <div class="m"><b>Capture</b><span id="kCap">—</span></div>
   </div>
   <div class="hint" id="capNote" style="margin-top:10px"></div>
+  <!-- Does the question annoy people? An empirical question, answered with a number
+       instead of an argument. Only counts hums where a strike was actually ASKED,
+       which is the ones where an impact was heard. -->
+  <div id="askBox" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+    <b style="font-size:13px">Does the strike question annoy people?</b>
+    <div class="big" id="askVerdict" style="margin-top:6px">—</div>
+    <div class="hint" id="askWhy" style="margin-top:4px"></div>
+  </div>
 </div>
 
 <div class="card">
@@ -115,6 +123,25 @@ const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',
     ? 'Healthy. Most hums are arriving with a strike attached.'
     : '<span class="warn"><b>Capture is the bottleneck.</b></span> Every unrated hum is a '
       +'row that can never answer the question this app exists to ask.';
+
+  /* ASKED = an impact was heard, so the gate opened. ANSWERED / SKIPPED split that.
+     Rows recorded before the gate shipped have no ask to measure, so they are excluded
+     rather than counted as silent refusals. */
+  const asked = all.filter(x=>x.impact_at!=null && (x.strike!=null || x.source==='skipped'));
+  const skipped = asked.filter(x=>x.source==='skipped').length;
+  const answered = asked.length - skipped;
+  if(!asked.length){
+    $('askVerdict').innerHTML='<span class="hint" style="font-size:15px">No data yet</span>';
+    $('askWhy').textContent='Nobody has been shown the question since it went live.';
+  } else {
+    const pct=Math.round(100*answered/asked.length);
+    const v = pct>=70?['They do not mind','go']:pct>=45?['Some drop off','warn']:['It is costing you','bad'];
+    $('askVerdict').innerHTML=`<span class="${v[1]}">${v[0]}</span> `+
+      `<span class="tag">${answered} answered · ${skipped} skipped · ${pct}%</span>`;
+    $('askWhy').textContent = pct>=70
+      ? 'One tap is not friction people resent. Keep asking.'
+      : 'If this stays low, stop asking on a golfer’s FIRST hum — that one should be pure payoff — and ask from the second onward.';
+  }
 
   // ── SCATTER ────────────────────────────────────────────────────────────────
   const X=rated.map(x=>x.score), Y=rated.map(x=>+x.strike);

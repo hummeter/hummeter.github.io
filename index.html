@@ -164,8 +164,15 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
         <tr><td>10</td><td>perfectly flush</td></tr>
       </table>
       <div class="strike" id="strike"></div>
-      <button class="btn ghost" id="gateSkip" style="margin-top:12px">
-        I didn’t hit a ball — show my score</button>
+      <!-- ⚠️ AN HONEST SKIP, ALWAYS VISIBLE. Brixton: "what if they don't want to do
+           that?" Right — and the trap fails worse than the miss. Corner someone and
+           they tap 7 to get past you, which injects noise into the exact measurement
+           this exists to make. A missing row is honest; a random row is a lie nothing
+           downstream can detect. The uncontaminated pairing comes from the ORDER, not
+           from compulsion: the score is hidden at the moment of answering, and that is
+           all the blinding needs. Anyone who skips is simply not in the dataset —
+           which is where they already were. -->
+      <button class="btn ghost" id="gateSkip" style="margin-top:12px">Skip — just show my score</button>
     </div>
 
     <div class="card" id="res" style="display:none">
@@ -1344,8 +1351,18 @@ function buildStrike(){
     wrap.appendChild(b);
   }
 }
+/* MEASURE THE DECLINE RATE. Whether the question annoys people is an empirical
+   question and we were about to answer it by arguing. A skip is currently
+   indistinguishable from never being asked, so it is marked — and the coach view
+   reports asked / answered / skipped. If people hate it, the number will say so
+   within a day and the fix (stop asking on someone's FIRST hum, when the payoff
+   should be pure) is one line. No schema change: `source` is unused and null on
+   every real row. */
 { const sk=document.getElementById('gateSkip');
-  if(sk) sk.onclick = () => revealScore(); }
+  if(sk) sk.onclick = () => {
+    if(pendingHum){ pendingHum.source='skipped'; Store.patch(pendingHum.hum_id,{source:'skipped'}); }
+    revealScore();
+  }; }
 
 /* ── WHAT TO SAY BACK WHEN THEY RATE A STRIKE ────────────────────────────────
    "Logged." is a receipt, not an answer. The pairing they just handed over - this hum
