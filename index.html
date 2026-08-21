@@ -1380,12 +1380,14 @@ function strikeInsight(strike){
   const NEED = 5;
   if(rated.length < NEED){
     const left = NEED - rated.length;
-    /* Name the PAYOFF AS A NUMBER THEY WILL OWN, not the analysis that produces it.
-       "which hum score your best strikes come from" describes a method; "the hum score
-       your good strikes start at" is a thing you can go chase on the next swing. The
-       promise has to be small enough to believe and specific enough to want. */
+    /* HIS PICK, 2026-08-21. Name the PAYOFF AS AN ACTION, not the analysis that
+       produces it. "which hum score your best strikes come from" describes a method;
+       "what your hum needs to hit for you to flush it" is a target you can chase on
+       the very next swing — and "flush it" is the word a golfer already uses for the
+       thing they want. The promise has to be small enough to believe and specific
+       enough to want. */
     return 'Logged. <b>' + (left===1 ? 'One' : left) + ' more rated shot' + (left>1?'s':'') +
-           '</b> and I\'ll show you the hum score your good strikes start at.';
+           '</b> and I\'ll show you what your hum needs to hit for you to flush it.';
   }
   const good = rated.filter(r=>r.strike>=7), bad = rated.filter(r=>r.strike<=4);
   const avg = a => a.reduce((s,r)=>s+r.score,0)/a.length;
