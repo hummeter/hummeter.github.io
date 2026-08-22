@@ -214,10 +214,23 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
            "put your 98 on the board" is an offer. -->
       <div id="nameNudge" style="display:none;margin-top:14px;padding:12px;
            border-radius:10px;background:#101c18;border:1px solid #1e4436">
+        <!-- ⚠️ THE FIRST VERSION SOLD A LEADERBOARD ROW. His call, 2026-08-22:
+             "not for the lines — to see more data on how your hums tie back to your
+             quality of strike." A row on a table is a prize for someone who already
+             cares about the table. THE REASON TO BE KNOWN IS THAT IT KEEPS EVERY HUM
+             ON ONE BOARD, and the hum-vs-strike read is the thing that cannot build
+             at all while a golfer keeps arriving as a stranger. That is also the
+             literal bug that bit him: one person, four player_ids, no chart.
+             The old copy is not just weaker, it was pointed at the wrong payoff. -->
         <b style="font-size:14px;color:var(--go)" id="nudgeQ">Put this on the board.</b>
-        <div class="hint" style="margin-top:2px">Named golfers get a row, a best, and a
-          most-improved line. Unnamed hums are counted but never shown.</div>
+        <div class="hint" style="margin-top:2px">It keeps every hum on one board — so you
+          can see how your hums tie back to your quality of strike.</div>
         <button class="btn ghost" id="nudgeName" style="margin-top:10px">Add your name</button>
+        <!-- AND AN HONEST WAY OUT. Same reasoning as the strike Skip: cornering
+             someone produces a junk answer, and "Brixton" typed to make a box go away
+             is worse than no name at all. -->
+        <button class="btn ghost" id="nudgeLater" style="margin-top:8px;background:none;
+          border:0;color:var(--dim);font-size:13px;padding:6px">Not now</button>
       </div>
       <!-- SHARE — pulled out on purpose, 2026-08-19. Brixton on the You-vs-Brixton
            card: "I just don't think that's something people are going to share." He is
@@ -1464,9 +1477,54 @@ function revealScore(){
 /* Shown only while they are unnamed, and only once a score exists to attach a name
    to. The heading quotes the score back at them - a number in the ask is the whole
    difference between a request and a trade. */
+/* ── "CAN WE NOT ASK FOR THE NAME EVERY TIME?" ────────────────────────────────
+   Brixton, 2026-08-22. Two different causes wear the same face, and only one of
+   them is a nag:
+
+   ① WE ASKED SOMEONE WHO HAD ALREADY ANSWERED. The name lives in localStorage
+      next to the player id. Any time the id survives but the name does not —
+      a name set on another device against this same id, a partial clear, an
+      identity adopted through the handoff hash before a name came with it — the
+      page has no idea who it is talking to and asks a question they already
+      answered. THE SERVER ALREADY KNOWS. Every row this player has ever written
+      carries their name, so ask the database once on load instead of asking the
+      human again. This is the half that actually stops the repeat.
+
+   ② WE ASKED AGAIN AFTER THEY SAID NO. A box that reappears on every score is a
+      nag, and a nagged person types "asdf" to make it go away — which is worse
+      than an anonymous row, because a junk name goes on a public board and can
+      never be told apart from a real one. So "Not now" STICKS: it is remembered
+      against their hum count and does not come back for another five hums. Ask
+      three times over a long session, not thirty.                              */
+async function rehydrateName(){
+  if(NAME || !cloudOn()) return;
+  try{
+    const r = await fetch(CLOUD.url+'/'+CLOUD.table+
+      '?player_id=eq.'+encodeURIComponent(ME)+'&name=not.is.null&select=name&order=at.desc&limit=1',
+      {headers:{apikey:CLOUD.key, Authorization:'Bearer '+CLOUD.key}});
+    const rows = await r.json();
+    const found = Array.isArray(rows) && rows[0] && rows[0].name;
+    if(found && !NAME){
+      NAME = String(found).slice(0,24);
+      localStorage.setItem(NMK, NAME);
+      renderWho(); paintNameNudge(); paintMe(); paintAll();
+    }
+  }catch(e){ /* offline: the ask is the fallback, which is the correct fallback */ }
+}
+
+const SNOOZE='humNameSnoozedAt';
 function paintNameNudge(){
   const box=document.getElementById('nameNudge'); if(!box) return;
   if(NAME || !pendingHum){ box.style.display='none'; return; }
+  /* Snoozed until they have hummed five more times. Stored as a hum COUNT rather
+     than a timestamp on purpose - somebody who comes back a week later and hums
+     twice has not earned the question again, and somebody mid-session who has
+     hummed ten more times has. */
+  let snoozedAt = null;
+  try{ snoozedAt = JSON.parse(localStorage.getItem(SNOOZE)); }catch(e){}
+  if(snoozedAt != null && Store.mine().length - snoozedAt < 5){
+    box.style.display='none'; return;
+  }
   document.getElementById('nudgeQ').textContent =
     'Put your ' + Math.round(pendingHum.score) + ' on the board.';
   box.style.display='';
@@ -1475,8 +1533,15 @@ function paintNameNudge(){
   if(nb) nb.onclick = () => {
     const n = prompt('What should the board call you?', NAME||'');
     if(n===null) return;
-    NAME = n.trim().slice(0,24); localStorage.setItem(NMK, NAME); renderWho();
-    Store.renameAll(NAME); paintMe(); paintAll(); paintNameNudge();
+    const v = n.trim().slice(0,24);
+    if(!v) return;                       // an empty prompt is not a name
+    NAME = v; localStorage.setItem(NMK, NAME); localStorage.removeItem(SNOOZE);
+    renderWho(); Store.renameAll(NAME); paintMe(); paintAll(); paintNameNudge();
+  };
+  const nl=document.getElementById('nudgeLater');
+  if(nl) nl.onclick = () => {
+    try{ localStorage.setItem(SNOOZE, String(Store.mine().length)); }catch(e){}
+    document.getElementById('nameNudge').style.display='none';
   }; }
 
 /* ── THE STRIKE RATING ────────────────────────────────────────────────────────
@@ -1949,5 +2014,8 @@ document.getElementById('firstok').onclick=()=>{
 
 showBlocker();          // must run before anything invites them to tap
 renderWho(); fit(); draw(); paintMe(); paintAll();
+/* Ask the SERVER who this is before ever asking the human again. Fire-and-forget:
+   nothing on screen waits on it, and if it comes back with a name it repaints. */
+rehydrateName();
 </script>
 </body></html>
