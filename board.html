@@ -73,9 +73,15 @@ tr.me td{background:#10241d}
 .skey{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px;color:var(--dim)}
 .skey td{padding:3px 0;vertical-align:top}
 .skey td:first-child{width:26px;color:var(--ink);font-weight:800}
-.strike{display:flex;gap:3px;margin-top:10px}
-.strike button{flex:1 1 0;min-width:0;padding:14px 0;border-radius:8px;background:#0f1620;
-  border:1px solid var(--line);font-weight:700;font-size:15px;line-height:1}
+/* ⚠️ ELEVEN BUTTONS ON ONE ROW OF A PHONE IS A 30pt TARGET. His words, 2026-08-22:
+   "it's a little hard to click these numbers, they're almost a little too small."
+   Apple's minimum is 44pt and this is THE question the entire dataset is built on -
+   a mis-tap here is not a UI annoyance, it is a wrong row in the only table that can
+   prove or kill the claim. Two rows of six: ~52pt tall, ~54pt wide. */
+.strike{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px}
+.strike button{padding:17px 0;border-radius:10px;background:#0f1620;
+  border:1px solid var(--line);font-weight:700;font-size:19px;line-height:1}
+.strike button.wide{grid-column:span 2}
 .strike button.sel{background:var(--accent);color:#06251a;border-color:var(--accent)}
 input{width:100%;padding:12px;border-radius:10px;background:#0f1620;border:1px solid var(--line);
   color:var(--ink);font:inherit}
@@ -199,6 +205,20 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       </div>
       <div class="hint" id="strikeDone" style="margin-top:14px;display:none;
         border-top:1px solid var(--line);padding-top:14px"></div>
+      <!-- THE NAME ASK LIVED ON THE LEADERBOARD TAB, WHICH A FIRST-TIMER NEVER OPENS:
+           17 golfers in the database, ONE name. So the board - the retention hook, the
+           social layer, "most improved", all of it - was invisible to 16 of 17 people.
+           It moves here, to the one second where a name is worth something: the score
+           exists, it is theirs, and it has nowhere to go. The ask carries THEIR NUMBER
+           rather than a generic invitation, because "add your name" is a chore and
+           "put your 98 on the board" is an offer. -->
+      <div id="nameNudge" style="display:none;margin-top:14px;padding:12px;
+           border-radius:10px;background:#101c18;border:1px solid #1e4436">
+        <b style="font-size:14px;color:var(--go)" id="nudgeQ">Put this on the board.</b>
+        <div class="hint" style="margin-top:2px">Named golfers get a row, a best, and a
+          most-improved line. Unnamed hums are counted but never shown.</div>
+        <button class="btn ghost" id="nudgeName" style="margin-top:10px">Add your name</button>
+      </div>
       <!-- SHARE — pulled out on purpose, 2026-08-19. Brixton on the You-vs-Brixton
            card: "I just don't think that's something people are going to share." He is
            probably right, and a share button nobody taps is worse than none: it takes up
@@ -223,10 +243,20 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       <canvas class="spark" id="spark"></canvas>
     </div>
     <div class="card" id="tensionCard">
-      <b style="font-size:13px">Where you lose it</b>
-      <div class="hint" style="margin-top:2px">Every hum you lost, and where you lost it.</div>
+      <!-- ⚠️ "Three swings and you'll see exactly when you're losing it" told him
+           NOTHING. 2026-08-22: "I don't get where it says that. What does that mean,
+           where you lose it? I'm confused about what populates there."
+           His own empty-state rule, broken by us: name what you'll GET, in the words
+           the finished version will use. The finished sentence here is "you tighten
+           up just before the ball" - so the empty state has to promise that
+           sentence, and the header has to say the chart is timed against the ball. -->
+      <b style="font-size:13px">Do you tighten up before the ball, or after it?</b>
+      <div class="hint" style="margin-top:2px">Every swing where your hum broke, marked
+        against the moment you hit the ball.</div>
       <canvas class="spark" id="tension" style="height:120px"></canvas>
-      <div class="hint" id="tensionText" style="margin-top:8px">Three swings and you'll see exactly when you're losing it.</div>
+      <div class="hint" id="tensionText" style="margin-top:8px">Nothing to plot yet — your
+        hum has held every time. Once it breaks on three swings, this says whether you
+        lose it on the way down or on the way through.</div>
     </div>
     <div class="card">
       <b style="font-size:13px">Your last 10</b>
@@ -235,7 +265,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     </div>
     <div class="card" id="strikeCard">
       <b style="font-size:13px">Does a better hum mean a better strike?</b>
-      <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll show you what your hum needs to hit for you to flush it.</div>
+      <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll show you what your hum score needs to read for you to flush it.</div>
       <canvas class="spark" id="scatter" style="height:140px"></canvas>
     </div>
   </section>
@@ -245,7 +275,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     <div class="card">
       <div class="rowm" style="margin-top:0">
         <div class="m"><b>Hums measured</b><span class="big" id="allN">—</span></div>
-        <div class="m"><b>Average hum</b><span class="big" id="allAvg">—</span></div>
+        <div class="m"><b>Average swing</b><span class="big" id="allAvg">—</span></div>
       </div>
       <div class="hint" id="allNote" style="margin-top:10px"></div>
       <div id="nameAsk" style="display:none;margin-top:12px;padding:12px;border-radius:10px;
@@ -279,10 +309,27 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
   <!-- Opened with "Tired of the microphone prompt?" — a line that names an
        annoyance the visitor may not have registered yet, and then sits under every
        screen forever repeating it. Benefit first, once they have earned it. -->
-  <p class="foot" id="hsHint" style="display:none">
-    <b>Add it to your Home Screen</b> — <b>Share</b> → <b>Add to Home Screen</b>.
-    Opens like a real app, and skips the mic prompt.
-  </p>
+  <!-- ⚠️ HE COULD NOT FOLLOW HIS OWN APP'S INSTRUCTION. 2026-08-22: "that to me is
+       a weird prompt. I don't even know how to add to my home screen. Is there a way
+       to add this to your home screen? I just don't understand."
+       Two separate failures in one line. (a) "Share → Add to Home Screen" names a
+       menu without saying where the menu IS - on iOS the share button is the small
+       square-with-an-arrow in the toolbar, and if you have never used it, the word
+       "Share" points at nothing. (b) It sat under EVERY screen from the first hum,
+       so a stranger met it before they had any reason to want the app permanently.
+       Now: real steps that name the button and where it lives, and it waits until
+       someone has hummed three times - by then wanting it back is a real feeling. -->
+  <div class="card" id="hsHint" style="display:none;margin-top:14px">
+    <b style="font-size:14px">Keep it — no mic prompt next time</b>
+    <div class="hint" style="margin-top:2px">iOS asks for the microphone again every
+      visit. Saving it to your home screen stops that, and it opens like a real app.</div>
+    <ol class="how" style="margin-top:10px">
+      <li>Tap the <b>share button</b> — the square with an arrow out of it, in Safari’s
+          bottom bar.</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+      <li>Tap <b>Add</b>. It lands on your home screen like an app.</li>
+    </ol>
+  </div>
 </div>
 
 <nav>
@@ -527,10 +574,17 @@ function showBlocker(){
        is a menu, and a menu at the door is a reason to leave. It is still there for
        anyone genuinely stuck — revealed after 12 seconds, which nobody who succeeded
        will ever see. */
-    ? '<div class="igesc"><div class="pt">↗</div>' +
+    /* ⚠️ THE STEPS WERE THE THIRD THING ON THE SCREEN. 2026-08-22, on his own
+       recording of this exact screen: "I'm just wondering if the 'Tap and choose
+       Open External Browser' should be up a little higher."
+       Everything above the steps was earning nothing. The ↗ glyph pointed at no
+       button (iOS lost its one-tap jump when Apple closed x-safari-https://), and
+       the explainer spent three lines justifying a restriction the visitor does not
+       care about — they care about getting in. One line of what it is, one line of
+       why there is a door, then the door. Nothing else above the fold. */
+    ? '<div class="igesc">' +
       '<h2>Hum through your swing.<br>See where it breaks.</h2>' +
-      '<p>Where your hum breaks is where your tension is. It needs your mic — and ' +
-        'Instagram’s browser won’t allow that, so:</p>' +
+      '<p>It needs your microphone, and Instagram’s browser won’t allow that. Two taps:</p>' +
       '<ul class="steps2">' +
         '<li><span class="num">1</span><span>Tap <span class="kbd">⋯</span> at the top right</span></li>' +
         '<li><span class="num">2</span><span>Choose <b>Open in external browser</b></span></li>' +
@@ -1139,7 +1193,15 @@ function draw(){
   const w=cv.clientWidth, h=cv.clientHeight;
   ctx.clearRect(0,0,w,h); ctx.fillStyle='#0d1420'; ctx.fillRect(0,0,w,h);
   const fr=H.getFrames(); const v=fr.filter(f=>f.hz);
-  const GUT=40;
+  /* ⚠️ NO NOTE NAMES. 2026-08-22, watching himself use it: "I don't like on the
+     side how there's the F3, E3, B2. Can we just get rid of all those side numbers?
+     To me that's just really confusing."  He is right, and the reason is worth
+     keeping: B2 is a fact about MUSIC. Nobody humming through a 7-iron is asking
+     which note they landed on, and a label you have to ignore is a label that costs
+     trust every time you ignore it. The banding stays - it is what makes flat look
+     flat - it just no longer announces itself. The gutter goes with it, so the trace
+     gets the full width of the card. */
+  const GUT=0;
   if(v.length<2){
     /* ── THE EMPTY STATE HAS TO TEACH THE READ ────────────────────────────────
        It used to be four grey rules on a black rectangle — the largest object on
@@ -1164,12 +1226,21 @@ function draw(){
     ctx.setLineDash([]);
     ctx.font='700 10px -apple-system,system-ui,sans-serif';
     ctx.textBaseline='middle'; ctx.textAlign='left';
+    /* ⚠️ "99" AND "BRIXTON" DID NOT EXPLAIN THEMSELVES. His own words, 2026-08-22:
+       "I'm not sure why there's a line with 99 and Brixton. I can't understand why
+       that's this Brixton there. Does that just show everyone's name?" A benchmark
+       that has to be decoded is not a benchmark. It now says what it is, whose it
+       is, and what it is FOR, in one line - the label carries the job the caption
+       was failing to do. */
     ctx.fillStyle='rgba(62,242,160,.75)'; ctx.fillText('99', 14, y);
     ctx.textAlign='right';
-    ctx.fillStyle='rgba(62,242,160,.55)'; ctx.fillText('BRIXTON', R, y-13);
+    ctx.fillStyle='rgba(62,242,160,.62)';
+    ctx.fillText('BRIXTON’S BEST — BEAT IT', R, y-13);
     ctx.textAlign='center';
     ctx.fillStyle='#5b6f88'; ctx.font='600 11px -apple-system,system-ui,sans-serif';
-    ctx.fillText('Flat line = steady hum. Yours draws here.', w/2, h-16);
+    /* Kept SHORT on purpose - at 11px this canvas fits ~48 characters and the first
+       version ran off both edges of the card on a 390px phone. */
+    ctx.fillText('Flatter line = higher score. Yours draws here.', w/2, h-16);
     ctx.restore();
     return;
   }
@@ -1203,10 +1274,6 @@ function draw(){
     ctx.fillRect(GUT,Math.max(0,yT),w-GUT,Math.min(h,yB)-Math.max(0,yT));
     ctx.strokeStyle=(s===0)?'#33475f':'#141d2b'; ctx.lineWidth=(s===0)?1.4:1;
     ctx.beginPath(); ctx.moveTo(GUT,yB); ctx.lineTo(w,yB); ctx.stroke();
-    const yc=(yT+yB)/2;
-    if(yc>7&&yc<h-7&&(!dense||s%2===0||s===0)){
-      ctx.fillStyle=(s===0)?'#9fb4cd':'#46586e'; ctx.fillText(nm.name,4,yc);
-    }
   }
   const S=window.__lastScore;
   ctx.save(); ctx.beginPath(); ctx.rect(GUT,0,w-GUT,h); ctx.clip();
@@ -1318,7 +1385,8 @@ function showResult(s){
     impact_at: s.impact ? +(s.impact.frame*H.HOP/1000).toFixed(2) : null
   };
   const hs=document.getElementById('hsHint');
-  if(hs && /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.navigator.standalone)
+  if(hs && /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.navigator.standalone
+     && Store.mine().length >= 3)
     hs.style.display='';
   Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
   if(document.getElementById('card')) drawShareCard(s);
@@ -1329,7 +1397,12 @@ function showResult(s){
      confusing question with no honest answer, and a confusing question is how you
      teach people to dismiss the one that matters. No impact heard → straight to
      the score. */
-  if(s.impact) openGate(); else revealScore();
+  /* AND NEVER ON THEIR FIRST HUM. The decline rate came back at 36% (8 skips of 22
+     asks on V3's first day) against a pre-registered 45% line, so the question is not
+     the problem - but a first hum is the ONLY thing most visitors will ever experience,
+     and that one should be pure payoff with nothing asked of it. Ask from the second
+     hum on, once they have already been given something. */
+  if(s.impact && Store.mine().length > 1) openGate(); else revealScore();
 }
 
 function openGate(){
@@ -1345,6 +1418,7 @@ function openGate(){
 }
 
 function revealScore(){
+  paintNameNudge();
   document.getElementById('gate').style.display='none';
   document.getElementById('go').style.display='';
   document.getElementById('gohint').style.display='';
@@ -1353,6 +1427,24 @@ function revealScore(){
   r.classList.remove('reveal'); void r.offsetWidth; r.classList.add('reveal');
   r.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
+
+/* Shown only while they are unnamed, and only once a score exists to attach a name
+   to. The heading quotes the score back at them - a number in the ask is the whole
+   difference between a request and a trade. */
+function paintNameNudge(){
+  const box=document.getElementById('nameNudge'); if(!box) return;
+  if(NAME || !pendingHum){ box.style.display='none'; return; }
+  document.getElementById('nudgeQ').textContent =
+    'Put your ' + Math.round(pendingHum.score) + ' on the board.';
+  box.style.display='';
+}
+{ const nb=document.getElementById('nudgeName');
+  if(nb) nb.onclick = () => {
+    const n = prompt('What should the board call you?', NAME||'');
+    if(n===null) return;
+    NAME = n.trim().slice(0,24); localStorage.setItem(NMK, NAME); renderWho();
+    Store.renameAll(NAME); paintMe(); paintAll(); paintNameNudge();
+  }; }
 
 /* ── THE STRIKE RATING ────────────────────────────────────────────────────────
    One tap, right after the score, while the shot is still in their hands.
@@ -1364,6 +1456,7 @@ function buildStrike(){
   for(let i=0;i<=10;i++){
     const b=document.createElement('button');
     b.textContent = i;
+    if(i===10) b.classList.add('wide');   // 6 + 5 leaves a gap; let 10 fill it
     if(i<5) b.style.borderColor='#4a2828';
     if(i>=8) b.style.borderColor='#1e4436';
     b.onclick=()=>{
@@ -1411,12 +1504,12 @@ function strikeInsight(strike){
     const left = NEED - rated.length;
     /* HIS PICK, 2026-08-21. Name the PAYOFF AS AN ACTION, not the analysis that
        produces it. "which hum score your best strikes come from" describes a method;
-       "what your hum needs to hit for you to flush it" is a target you can chase on
+       "what your hum score needs to read for you to flush it" is a target you can chase on
        the very next swing — and "flush it" is the word a golfer already uses for the
        thing they want. The promise has to be small enough to believe and specific
        enough to want. */
     return 'Logged. <b>' + (left===1 ? 'One' : left) + ' more rated shot' + (left>1?'s':'') +
-           '</b> and I\'ll show you what your hum needs to hit for you to flush it.';
+           '</b> and I\'ll show you what your hum score needs to read for you to flush it.';
   }
   const good = rated.filter(r=>r.strike>=7), bad = rated.filter(r=>r.strike<=4);
   const avg = a => a.reduce((s,r)=>s+r.score,0)/a.length;
@@ -1556,7 +1649,7 @@ function scatter(rows){
   const txt=document.getElementById('corrText');
   if(rows.length<5){ const k=5-rows.length;
     txt.textContent='Rate '+k+' more strike'+(k>1?'s':'')+
-      ' and I’ll show you what your hum needs to hit for you to flush it.'; return; }
+      ' and I’ll show you what your hum score needs to read for you to flush it.'; return; }
   g.strokeStyle='#1b2735'; g.strokeRect(28,4,w-34,h-24);
   rows.forEach(p=>{
     const x=28+(p.score/100)*(w-34), y=h-20-(p.strike/10)*(h-24);
@@ -1583,10 +1676,26 @@ async function paintAll(){
   const {rows, local} = await Store.everyone();
   document.getElementById('allNote').textContent = local
     ? 'No server connected yet, so this is only the hums recorded on this device.'
-    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size + ' golfers.';
+    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size +
+      ' golfers. The board ranks hums with a ball in them.';
+  /* ── A COUCH HUM IS NOT A SWING, AND IT WAS SETTING THE BAR ─────────────────
+     Measured on the live database, 2026-08-22:
+
+         hums with a strike in them      median 64
+         hums with no strike at all      median 94   (24 of 41 scored 90+)
+
+     A seated hum into a phone IS steady - that is an honest result, not a scoring
+     bug. But it means the population average, the board, and "most improved" were
+     largely ranking people for sitting still, and the golfer who does the actual
+     thing gets measured against them and told he is below average FOR DOING IT.
+     So every comparison between golfers is computed over swing hums only. A hum
+     with no strike heard still scores, still saves, still counts in the volume -
+     it just cannot set the bar for a swing it never was.                        */
+  const isSwing = r => r.through_impact != null;
+  const swings = rows.filter(isSwing);
   document.getElementById('allN').textContent = rows.length;
-  document.getElementById('allAvg').textContent = rows.length
-    ? (rows.reduce((s,r)=>s+r.score,0)/rows.length).toFixed(0) : '—';
+  document.getElementById('allAvg').textContent = swings.length
+    ? (swings.reduce((s,r)=>s+r.score,0)/swings.length).toFixed(0) : '—';
 
   /* ⚠️ GROUP NAMED PLAYERS BY NAME, NOT BY DEVICE. A person is not a browser
      profile. Two Brixtons were already on this board — one from Safari, one from
@@ -1604,9 +1713,14 @@ async function paintAll(){
     rs.sort((a,b)=> a.at<b.at?-1:1);
     const first=rs.slice(0,3), last=rs.slice(-3);
     const avg=a=>a.reduce((s,r)=>s+r.score,0)/a.length;
+    /* Ranked on their best SWING, not their best hum. Someone whose only hums are
+       couch hums has not been beaten - they have not played, and the board says so
+       by leaving them off rather than by putting a 98 above a real golfer. */
+    const sw = rs.filter(isSwing);
+    const sfirst = sw.slice(0,3), slast = sw.slice(-3);
     return { id, name: (rs.find(r=>r.name)||{}).name || null,
-             best: Math.max(...rs.map(r=>r.score)), n: rs.length,
-             gain: rs.length>=6 ? avg(last)-avg(first) : null };
+             best: sw.length ? Math.max(...sw.map(r=>r.score)) : null, n: sw.length,
+             gain: sw.length>=6 ? avg(slast)-avg(sfirst) : null };
   })
   /* ── THE BOARD IS FOR NAMED GOLFERS ─────────────────────────────────────────
      A row reading "Unnamed golfer" is not a competitor, it is a blank in a list,
@@ -1618,7 +1732,7 @@ async function paintAll(){
      in the entire database — the only data that can prove or kill the hum/strike
      claim. They stay in Supabase and stay in the percentile. They are just not
      names on a scoreboard.                                                      */
-  .filter(p => p.name);
+  .filter(p => p.name && p.best != null);
 
   const tb=document.getElementById('allRows'); tb.innerHTML='';
   players.sort((a,b)=>b.best-a.best).slice(0,20).forEach((p,i)=>{
@@ -1627,7 +1741,7 @@ async function paintAll(){
       '</td><td><b>'+p.best.toFixed(0)+'</b></td><td>'+p.n+'</td>';
     tb.appendChild(tr);
   });
-  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No names up yet. Add yours and you’re first.</td></tr>';
+  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No named swings up yet. Hum through one and you’re first.</td></tr>';
 
   const ib=document.getElementById('impRows'); ib.innerHTML='';
   const imp=players.filter(p=>p.gain!=null).sort((a,b)=>b.gain-a.gain).slice(0,10);
@@ -1637,7 +1751,7 @@ async function paintAll(){
       (p.gain>=0?'var(--go)':'var(--bad)')+'"><b>'+(p.gain>=0?'+':'')+p.gain.toFixed(1)+'</b></td>';
     ib.appendChild(tr);
   });
-  if(!imp.length) ib.innerHTML='<tr><td colspan="3" class="hint">Needs 6 hums from someone.</td></tr>';
+  if(!imp.length) ib.innerHTML='<tr><td colspan="3" class="hint">Needs 6 swings from someone.</td></tr>';
   // only once they are actually on the board
   const ask=document.getElementById('nameAsk');
   if(ask) ask.style.display = (!NAME && Store.mine().length) ? '' : 'none';
