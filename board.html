@@ -97,7 +97,12 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
 <div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div><h1>Humming Mastery</h1><div class="sub" id="who">—</div></div>
-    <button class="btn ghost" style="width:auto;padding:8px 12px;font-size:13px" id="editname">Name</button>
+    <!-- ⚠️ REMOVED FROM THE HEADER, 2026-08-22. "Why is there a name in the top
+         right? You already have my name." A control for a thing that is already
+         done, sitting in the most valuable pixels on the page, on every screen,
+         forever. Renaming is a once-a-year action; it belongs where you would go
+         looking for it. Moved to the bottom of MY BOARD. -->
+    <button class="btn ghost" style="width:auto;padding:8px 12px;font-size:13px;display:none" id="editname">Name</button>
   </div>
 
   <!-- ── HUM ───────────────────────────────────────────────────────────── -->
@@ -174,7 +179,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
           border:1px solid #2b3950;border-radius:12px;background:#1b2433;
           line-height:1;white-space:nowrap;-webkit-tap-highlight-color:transparent">Skip →</button>
       </div>
-      <div class="hint" style="margin-top:2px">Your score is ready — one tap and it’s yours.</div>
+      <div class="hint" id="gateSub" style="margin-top:2px">Your score is ready — one tap and it’s yours.</div>
       <div class="strike" id="strike" style="margin-top:14px"></div>
       <!-- His scale, verbatim: 0 terrible, under 5 fat, 8 a pretty good strike,
            10 perfectly flush. Four rows, not two columns — a golfer is matching a shot
@@ -281,6 +286,15 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       <div class="hint" id="corrText" style="margin-top:6px">Rate five strikes and I’ll show you what your hum score needs to read for you to flush it.</div>
       <canvas class="spark" id="scatter" style="height:140px"></canvas>
     </div>
+    <!-- Where the two identity controls went. Out of the header (a stranger does
+         not need them and a returning golfer does not need them EVERY screen), and
+         into the bottom of their own board, which is the one page where "who am I
+         on here" is a question someone might actually be asking. -->
+    <p class="foot" id="meFoot" style="display:none;text-align:left;margin-top:14px">
+      You’re on the board as <b id="meName"></b> ·
+      <span style="text-decoration:underline;cursor:pointer" id="meRename">change</span> ·
+      <span style="text-decoration:underline;cursor:pointer" id="meCode">board code</span>
+    </p>
   </section>
 
   <!-- ── LEADERBOARD ───────────────────────────────────────────────────── -->
@@ -433,14 +447,22 @@ function renderWho(){
      stated reason - Brixton: "I don't quite get what that's going to do." It only means
      anything once there is a score to attach it to, so the ask now lives on the
      leaderboard, and until then the header stays quiet. */
+  /* ⚠️ "Why does it have to say Brixton board code at the top? I don't get that."
+     He is right twice over. His own name is not information — he knows who he is —
+     and "board code" is jargon for a recovery mechanic that matters to roughly
+     nobody, printed above the fold on every single screen. The header now carries
+     the product name and nothing else. The board code still exists, in the one
+     place someone would look for it: the bottom of their own board. */
   const el=document.getElementById('who');
-  el.innerHTML = NAME
-    ? esc(NAME) + ' · <span style="text-decoration:underline;cursor:pointer" id="rec">board code</span>'
-    : '';
+  el.innerHTML = '';
   const r=el.querySelector('#rec');
   if(r) r.onclick = recoveryUI;
   const nameBtn = document.getElementById('editname');
-  if(nameBtn) nameBtn.style.display = NAME ? '' : 'none';
+  if(nameBtn) nameBtn.style.display = 'none';      // lives at the foot of MY BOARD now
+  const foot = document.getElementById('meFoot');
+  if(foot) foot.style.display = NAME ? '' : 'none';
+  const mn = document.getElementById('meName');
+  if(mn) mn.textContent = NAME || '';
 }
 /* ── CARRYING A BOARD TO ANOTHER PHONE ────────────────────────────────────────
    No account means no password to reset — and also no way to move. The compromise
@@ -460,6 +482,11 @@ function recoveryUI(){
     alert('Loaded.');
   }
 }
+
+{ const mr=document.getElementById('meRename');
+  if(mr) mr.onclick = () => document.getElementById('editname').onclick();
+  const mc=document.getElementById('meCode');
+  if(mc) mc.onclick = recoveryUI; }
 
 document.getElementById('editname').onclick = () => {
   const n = prompt('What should the board call you?', NAME||'');
@@ -511,8 +538,51 @@ const Store = {
       body: JSON.stringify({name})}).catch(()=>{}); }
   },
 
-  mine(){ return this.localAll().filter(r=>r.player_id===ME)
+  /* ⚠️ "I put so many hums in. Why is it not showing me data in there?"
+     2026-08-22, looking at MY BOARD reading HUMS 2 while the database held 59 of
+     his. THIS BOARD ONLY EVER READ THIS DEVICE. Every hum goes to the server, and
+     the personal board never once asked for them back — so the moment his browser
+     changed (Instagram webview → Safari, a clear, a new phone) his whole history
+     was invisible even though every row was safely stored.
+
+     Two halves to being "him": the device id, and the NAME. Matching on either is
+     what heals the identities that already split — the leaderboard has grouped by
+     name since 8/21 and the personal board was the last place still thinking a
+     person is a browser profile. */
+  isMine(r){
+    if(r.player_id===ME) return true;
+    return !!(NAME && r.name && r.name.trim().toLowerCase()===NAME.trim().toLowerCase());
+  },
+  mine(){ return this.localAll().filter(r=>this.isMine(r))
               .sort((a,b)=> a.at < b.at ? 1 : -1); },
+
+  /* Pull this player's own rows down from the server and merge them into the local
+     copy, keyed on hum_id so a repeat call cannot duplicate anything. Local stays
+     authoritative for a row that exists in both (it may hold a strike rating that
+     has not finished PATCHing yet). */
+  async hydrateMine(){
+    if(!cloudOn()) return false;
+    const q = ['player_id=eq.'+encodeURIComponent(ME)];
+    if(NAME) q.push('name=eq.'+encodeURIComponent(NAME));
+    let pulled=[];
+    for(const filter of q){
+      try{
+        const r = await fetch(CLOUD.url+'/'+CLOUD.table+'?'+filter+
+          '&select=*&order=at.desc&limit=500',
+          {headers:{apikey:CLOUD.key, Authorization:'Bearer '+CLOUD.key}});
+        const rows = await r.json();
+        if(Array.isArray(rows)) pulled = pulled.concat(rows);
+      }catch(e){ /* offline: the local copy is still correct, just shorter */ }
+    }
+    if(!pulled.length) return false;
+    const local = this.localAll();
+    const have = new Set(local.map(r=>r.hum_id));
+    let added=0;
+    pulled.forEach(r=>{ if(r && r.hum_id && !have.has(r.hum_id) &&
+      r.source!=='wiring-test-ignore'){ have.add(r.hum_id); local.push(r); added++; } });
+    if(added){ local.sort((a,b)=> a.at < b.at ? -1 : 1); this.localPut(local); }
+    return added>0;
+  },
 
   /* Everyone. Without a backend this can only ever be the hums on THIS device, and
      the UI says so rather than pretending a leaderboard of one is a leaderboard.  */
@@ -1437,21 +1507,42 @@ function showResult(s){
   Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
   if(document.getElementById('card')) drawShareCard(s);
 
-  /* ONLY ASK ABOUT A STRIKE WHEN A STRIKE HAPPENED. The impact detector already
-     knows: a golf strike is a sharp broadband transient and a sofa is not. Asking
-     "how'd you strike it?" of someone testing a steady note in their kitchen is a
-     confusing question with no honest answer, and a confusing question is how you
-     teach people to dismiss the one that matters. No impact heard → straight to
-     the score. */
+  /* ⚠️ THIS USED TO FIRE ONLY WHEN THE IMPACT DETECTOR HEARD A STRIKE, AND THAT
+     GATE READ AS A DELETED FEATURE. 2026-08-22: "why, when I put the scores in
+     now, is it not asking for the quality of strike? You got rid of that. I just
+     said make the buttons a little easier to click."
+     Nothing was removed. He was humming indoors with no ball — every one of those
+     hums came back "no strike heard", so the gate never opened, and from the
+     outside that is indistinguishable from us having taken the question away.
+
+     THE GATE WAS SOLVING OUR PROBLEM, NOT HIS. It existed so a stranger humming on
+     a sofa is not asked an unanswerable question — but a detector that misses a
+     quiet chip, or a wedge into a mat, or a strike buried in wind, silently costs
+     us the one pairing the entire dataset is made of. A missed ASK is unrecoverable;
+     an unnecessary ask has a Skip button sitting right next to it.
+     So: ask whenever there is anything to ask about. */
   /* AND NEVER ON THEIR FIRST HUM. The decline rate came back at 36% (8 skips of 22
      asks on V3's first day) against a pre-registered 45% line, so the question is not
      the problem - but a first hum is the ONLY thing most visitors will ever experience,
      and that one should be pure payoff with nothing asked of it. Ask from the second
      hum on, once they have already been given something. */
-  if(s.impact && Store.mine().length > 1) openGate(); else revealScore();
+  if(Store.mine().length > 1) openGate(); else revealScore();
 }
 
 function openGate(){
+  /* When we heard the ball, ask about the ball. When we did not, say so in the
+     question itself rather than pretending — a golfer who really was just testing a
+     note reads "if you hit one" and takes the Skip without feeling caught out. */
+  /* The heading stays SHORT and identical either way - "Hit one? How was the
+     strike?" wrapped onto two lines on a 390px phone and shoved the Skip button
+     out of line with it. The caveat belongs in the subhead, where it costs no
+     layout and still gives an honest out to someone who really was just testing
+     a note. */
+  const heardBall = !!(window.__lastScore && window.__lastScore.impact);
+  const sub=document.getElementById('gateSub');
+  if(sub) sub.textContent = heardBall
+    ? 'Your score is ready — one tap and it’s yours.'
+    : 'Didn’t hit a ball that time? Skip it.';
   buildStrike();
   document.getElementById('strikeDone').style.display='none';
   /* "Hum again" sits between the trace and the question, and a competing button
@@ -1649,7 +1740,16 @@ function paintMe(){
            -(last.slice(0,h).reduce((s,x)=>s+x,0)/h);
     document.getElementById('myTrend').textContent=(d>=0?'+':'')+d.toFixed(1)+' pts';
     document.getElementById('myTrend').style.color = d>=0?'var(--go)':'var(--bad)';
-  } else document.getElementById('myTrend').textContent='4 more hums';
+  } else if(last.length>=2){
+    /* ⚠️ THIS SAID "4 more hums" AND HE READ IT AS A TREND. "The trend, last 10
+       hums, four more hums. I don't get what that means." A tile whose LABEL says
+       TREND and whose VALUE is a countdown is asking the reader to notice that the
+       value stopped answering the label. With two hums there is already a direction
+       to report - it is a weak one, so report it weakly rather than not at all. */
+    const d = last[last.length-1] - last[0];
+    document.getElementById('myTrend').textContent=(d>=0?'+':'')+d.toFixed(0)+' pts';
+    document.getElementById('myTrend').style.color = d>=0?'var(--go)':'var(--bad)';
+  } else document.getElementById('myTrend').textContent='—';
 
   const tb=document.getElementById('myRows'); tb.innerHTML='';
   rows.slice(0,10).forEach(r=>{
@@ -1704,7 +1804,19 @@ function tensionPlot(rows){
 
   const all=[];
   rows.forEach(x=>{ if(Array.isArray(x.crack_rel)) x.crack_rel.forEach(v=>all.push(v)); });
-  if(all.length<3){ txt.textContent='Three swings and you’ll see exactly when you’re losing it.'; return; }
+  if(all.length<3){
+    /* ⚠️ THE STATIC EMPTY STATE WAS FIXED IN THE HTML AND THIS LINE QUIETLY PUT THE
+       OLD ONE BACK ON EVERY REPAINT - which is why he still asked "what does that
+       mean, where you lose it?" after it had supposedly been rewritten. Two copies
+       of the same string, the same trap as the two repos.
+
+       And it has to distinguish the two reasons the chart is empty, because they
+       are opposite news: nothing broke (good) vs not enough swings yet (wait). */
+    txt.textContent = rows.length >= 3
+      ? 'Nothing to plot — your hum has not broken yet. This fills in the moment it does.'
+      : 'Hum through three swings and this shows whether you tighten up before the ball or after it.';
+    return;
+  }
 
   const LO=-2.5, HI=1.5;                       // 2.5s before the ball to 1.5s after
   const xOf=t=>28+((Math.max(LO,Math.min(HI,t))-LO)/(HI-LO))*(w-36);
@@ -2016,6 +2128,6 @@ showBlocker();          // must run before anything invites them to tap
 renderWho(); fit(); draw(); paintMe(); paintAll();
 /* Ask the SERVER who this is before ever asking the human again. Fire-and-forget:
    nothing on screen waits on it, and if it comes back with a name it repaints. */
-rehydrateName();
+rehydrateName().then(()=> Store.hydrateMine()).then(ok=>{ if(ok){ paintMe(); paintAll(); } });
 </script>
 </body></html>
