@@ -336,27 +336,25 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
   <!-- Opened with "Tired of the microphone prompt?" — a line that names an
        annoyance the visitor may not have registered yet, and then sits under every
        screen forever repeating it. Benefit first, once they have earned it. -->
-  <!-- ⚠️ HE COULD NOT FOLLOW HIS OWN APP'S INSTRUCTION. 2026-08-22: "that to me is
-       a weird prompt. I don't even know how to add to my home screen. Is there a way
-       to add this to your home screen? I just don't understand."
-       Two separate failures in one line. (a) "Share → Add to Home Screen" names a
-       menu without saying where the menu IS - on iOS the share button is the small
-       square-with-an-arrow in the toolbar, and if you have never used it, the word
-       "Share" points at nothing. (b) It sat under EVERY screen from the first hum,
-       so a stranger met it before they had any reason to want the app permanently.
-       Now: real steps that name the button and where it lives, and it waits until
-       someone has hummed three times - by then wanting it back is a real feeling. -->
-  <div class="card" id="hsHint" style="display:none;margin-top:14px">
-    <b style="font-size:14px">Keep it — no mic prompt next time</b>
-    <div class="hint" style="margin-top:2px">iOS asks for the microphone again every
-      visit. Saving it to your home screen stops that, and it opens like a real app.</div>
-    <ol class="how" style="margin-top:10px">
-      <li>Tap the <b>share button</b> — the square with an arrow out of it, in Safari’s
-          bottom bar.</li>
-      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
-      <li>Tap <b>Add</b>. It lands on your home screen like an app.</li>
-    </ol>
-  </div>
+  <!-- ── 🗑️ REMOVED 2026-08-22. THE SECOND COMPLAINT ABOUT THE SAME CARD. ───────
+       v1 was "Add it to your Home Screen — Share → Add to Home Screen". He could
+       not follow it, so it was rewritten into three real steps naming the button
+       and where it lives. He read the rewrite and asked the same question again:
+       "How do I keep it? I don't get it... that's so confusing. Is that actually
+       doable?"
+
+       WHEN THE SAME ELEMENT CONFUSES HIM TWICE, THE ANSWER IS NOT A THIRD REWRITE.
+       Two failures on the same copy is the copy telling you the ELEMENT is wrong,
+       not the words. And look at what it was trading: a permanent three-step
+       instruction, printed under every screen for anyone who hums more than twice,
+       against a one-tap permission prompt they see once per visit. The card costs
+       more attention than the annoyance it removes.
+
+       ⚠️ AND THE CLAIM UNDER IT WAS NEVER VERIFIED. "A home-screen web app keeps
+       its permission" was written as fact and never tested on a real iPhone across
+       iOS versions - so we were spending his trust on an instruction we could not
+       swear to. If the mic prompt ever becomes a real complaint from real golfers,
+       it comes back as ONE dismissible line, after it has been tested. -->
 </div>
 
 <nav>
@@ -1500,10 +1498,7 @@ function showResult(s){
       ? s.cracks.map(c => +(c.at - s.impact.frame*H.HOP/1000).toFixed(2)) : null,
     impact_at: s.impact ? +(s.impact.frame*H.HOP/1000).toFixed(2) : null
   };
-  const hs=document.getElementById('hsHint');
-  if(hs && /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.navigator.standalone
-     && Store.mine().length >= 3)
-    hs.style.display='';
+
   Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
   if(document.getElementById('card')) drawShareCard(s);
 
