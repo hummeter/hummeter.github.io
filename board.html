@@ -256,7 +256,12 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       </div>
       <div class="rowm">
         <div class="m"><b>Hums</b><span id="myN">—</span></div>
-        <div class="m"><b>Trend (last 10)</b><span id="myTrend">—</span></div>
+        <!-- ⚠️ "TREND (LAST 10)" — "what does that mean? That's a little confusing."
+             He is right: it names a STATISTIC (a window, and a method inside it) and
+             leaves the reader to work out what it is for. The only question anyone
+             brings to this tile is "am I getting better?" so the label answers that
+             question instead of describing how it was worked out. -->
+        <div class="m"><b>Improving?</b><span id="myTrend">—</span></div>
       </div>
       <canvas class="spark" id="spark"></canvas>
     </div>
@@ -291,9 +296,15 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
          into the bottom of their own board, which is the one page where "who am I
          on here" is a question someone might actually be asking. -->
     <p class="foot" id="meFoot" style="display:none;text-align:left;margin-top:14px">
-      You’re on the board as <b id="meName"></b> ·
-      <span style="text-decoration:underline;cursor:pointer" id="meRename">change</span> ·
-      <span style="text-decoration:underline;cursor:pointer" id="meCode">board code</span>
+      <!-- ⚠️ "That says you're on the board as Brixton, change board code. Why is
+           that really weird?" It is weird because it is three things jammed on one
+           line and one of them is jargon he has now objected to TWICE. "Board code"
+           is the name of an internal recovery mechanic; nobody arrives wanting one.
+           And it matters far less than it did: the board now restores a golfer from
+           the server by NAME, so typing the same name on a new phone brings their
+           hums back with no code involved. One quiet link, and it says what tapping
+           it does. recoveryUI() stays in the source for whenever it is needed. -->
+      <span style="text-decoration:underline;cursor:pointer" id="meRename">Change your name</span>
     </p>
   </section>
 
@@ -459,8 +470,7 @@ function renderWho(){
   if(nameBtn) nameBtn.style.display = 'none';      // lives at the foot of MY BOARD now
   const foot = document.getElementById('meFoot');
   if(foot) foot.style.display = NAME ? '' : 'none';
-  const mn = document.getElementById('meName');
-  if(mn) mn.textContent = NAME || '';
+
 }
 /* ── CARRYING A BOARD TO ANOTHER PHONE ────────────────────────────────────────
    No account means no password to reset — and also no way to move. The compromise
@@ -483,8 +493,7 @@ function recoveryUI(){
 
 { const mr=document.getElementById('meRename');
   if(mr) mr.onclick = () => document.getElementById('editname').onclick();
-  const mc=document.getElementById('meCode');
-  if(mc) mc.onclick = recoveryUI; }
+}
 
 document.getElementById('editname').onclick = () => {
   const n = prompt('What should the board call you?', NAME||'');
@@ -1728,7 +1737,10 @@ function paintMe(){
   const avg=rows.reduce((s,r)=>s+r.score,0)/n;
   document.getElementById('myBest').textContent=best.toFixed(0);
   document.getElementById('myAvg').textContent=avg.toFixed(0);
-  const last=rows.slice(0,10).map(r=>r.score).reverse();
+  /* The same window the sparkline directly below it draws. Two numbers about
+     "recently" computed over different windows, stacked on top of each other, is a
+     contradiction waiting for someone to notice it. */
+  const last=rows.slice(0,20).map(r=>r.score).reverse();
   if(last.length>=4){
     const h=last.length>>1;
     const d=(last.slice(h).reduce((s,x)=>s+x,0)/(last.length-h))
@@ -1767,18 +1779,40 @@ function sparkline(c, vals){
   const g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0);
   const w=r.width,h=r.height; g.clearRect(0,0,w,h);
   if(vals.length<2) return;
+  /* ⚠️ "Your line graph showing the lines being all over the place looks really
+     weird." It was drawing every hum he has ever taken, raw — 61 of them, including
+     test hums, aborted reads and a 40 next to a 98 — across ~320 pixels. That is
+     not a line, it is a barcode, and NOTHING can be read off it.
+
+     The tile above it asks "am I improving?", so this has to answer the same
+     question: the last 20 hums, smoothed to a 5-hum rolling average. Smoothing is
+     honest here because a single hum is not a fact about a golfer — it is one swing
+     with a phone on the ground — and the shape of five in a row is. The raw points
+     stay, drawn faintly underneath, so nothing is hidden. */
+  const RECENT=20, WIN=5;
+  const raw = vals.slice(-RECENT);
+  const smooth = raw.map((_,i)=>{
+    const a = raw.slice(Math.max(0,i-WIN+1), i+1);
+    return a.reduce((t,x)=>t+x,0)/a.length;
+  });
   // Fixed 0–100 axis on purpose: the bands are fixed so a line over weeks MEANS
   // something. An auto-scaled sparkline would make every session look identical.
   const yOf=v=>h-4-(v/100)*(h-8);
   [60,70,85].forEach(b=>{ g.strokeStyle='#1b2735'; g.lineWidth=1;
     g.beginPath(); g.moveTo(0,yOf(b)); g.lineTo(w,yOf(b)); g.stroke(); });
-  g.strokeStyle='#3ef2a0'; g.lineWidth=2; g.lineJoin='round'; g.beginPath();
-  vals.forEach((v,i)=>{ const x=(i/(vals.length-1))*w, y=yOf(v);
-    i?g.lineTo(x,y):g.moveTo(x,y); });
+  const xOf=i=>(i/Math.max(1,raw.length-1))*w;
+  // every hum, faint — the evidence is still on the page
+  g.strokeStyle='rgba(62,242,160,.22)'; g.lineWidth=1; g.lineJoin='round'; g.beginPath();
+  raw.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?g.lineTo(x,y):g.moveTo(x,y); });
+  g.stroke();
+  // the shape, bold — this is the one someone can actually read
+  g.strokeStyle='#3ef2a0'; g.lineWidth=2.5; g.lineJoin='round'; g.beginPath();
+  smooth.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?g.lineTo(x,y):g.moveTo(x,y); });
   g.stroke();
   g.fillStyle='#3ef2a0';
-  const lx=w, ly=yOf(vals[vals.length-1]);
-  g.beginPath(); g.arc(lx-3,ly,3,0,7); g.fill();
+  g.beginPath(); g.arc(w-3, yOf(smooth[smooth.length-1]), 3.5, 0, 7); g.fill();
+  g.fillStyle='#5b6f88'; g.font='600 10px -apple-system,system-ui,sans-serif';
+  g.fillText('your last ' + raw.length + ' hums', 2, h-3);
 }
 
 /* ── WHERE YOU LOSE IT ────────────────────────────────────────────────────────
