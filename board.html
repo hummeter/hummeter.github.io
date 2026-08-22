@@ -275,7 +275,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
     <div class="card">
       <div class="rowm" style="margin-top:0">
         <div class="m"><b>Hums measured</b><span class="big" id="allN">—</span></div>
-        <div class="m"><b>Average swing</b><span class="big" id="allAvg">—</span></div>
+        <div class="m"><b>Average hum</b><span class="big" id="allAvg">—</span></div>
       </div>
       <div class="hint" id="allNote" style="margin-top:10px"></div>
       <div id="nameAsk" style="display:none;margin-top:12px;padding:12px;border-radius:10px;
@@ -641,6 +641,39 @@ function showBlocker(){
     try{ await navigator.clipboard.writeText(handoffUrl(url)); c.textContent = 'Copied — paste it in ' + app; }
     catch(e){ c.textContent = url.replace(/^https?:\/\//,''); }
   };
+  /* ── 🐛 THE MANUAL ROUTE OUT OF INSTAGRAM WAS LOSING THE PLAYER ──────────────
+     2026-08-21 taught us the webview and Safari have separate localStorage, and we
+     fixed it by putting the identity in the hash of the JUMP. 2026-08-22 showed
+     that fix only covers one of the three doors: on his own recording he took the
+     ⋯ → "Open in external browser" route, landed in Safari as a brand-new player
+     with 2 hums, and left 59 behind. The auto-jump carries the token; the Instagram
+     MENU does not know the token exists.
+
+     The only lever we have over that door is the address bar — Instagram hands
+     Safari whatever URL the document is currently at. So while we are blocked,
+     stamp the identity into our OWN url. Then every exit carries it: the auto-jump,
+     the ⋯ menu, and anyone who copies the link out of the bar by hand.
+
+     Re-stamped every 60s because the token deliberately expires after 5 minutes
+     (see HANDOFF_MS) and someone can sit on this screen longer than that.
+
+     ⚠️ ONLY EVER WHILE BLOCKED. On a working page this would leave an identity
+     token sitting in a visible address bar for someone to screenshot and share.
+     And the two adoption guards still apply on arrival: an established browser is
+     never overwritten, and a stale token is ignored.
+
+     ⚠️ HONEST LIMIT: this assumes Instagram passes the CURRENT document url rather
+     than the original link it was given. If it passes the original, the split
+     survives and the real fix is server-side identity. The board already heals the
+     named case by grouping on name — which is now asked for at the score.        */
+  try{
+    const stampId = () => {
+      try{ history.replaceState(null, '', handoffUrl(location.pathname)); }catch(e){}
+    };
+    stampId();
+    setInterval(stampId, 60*1000);
+  }catch(e){}
+
   document.getElementById('go').style.display='none';
   ['firstrun','humcard','gohint'].forEach(id => {
     const el = document.getElementById(id); if(el) el.style.display='none';
@@ -1676,26 +1709,31 @@ async function paintAll(){
   const {rows, local} = await Store.everyone();
   document.getElementById('allNote').textContent = local
     ? 'No server connected yet, so this is only the hums recorded on this device.'
-    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size +
-      ' golfers. The board ranks hums with a ball in them.';
-  /* ── A COUCH HUM IS NOT A SWING, AND IT WAS SETTING THE BAR ─────────────────
+    : rows.length + ' hums from ' + new Set(rows.map(r=>r.player_id)).size + ' golfers.';
+  /* ⚠️ THIS BRIEFLY FILTERED THE BOARD TO SWING HUMS ONLY AND WAS REVERSED THE SAME
+     DAY. The reasoning is kept because the MEASUREMENT was real and the CONCLUSION
+     was not.
+
      Measured on the live database, 2026-08-22:
-
-         hums with a strike in them      median 64
+         hums with a strike in them      median 64   (10 of 45 scored 90+)
          hums with no strike at all      median 94   (24 of 41 scored 90+)
+     So the board was being topped by people who never swung a club, and the fix
+     looked obvious: rank swings only.
 
-     A seated hum into a phone IS steady - that is an honest result, not a scoring
-     bug. But it means the population average, the board, and "most improved" were
-     largely ranking people for sitting still, and the golfer who does the actual
-     thing gets measured against them and told he is below average FOR DOING IT.
-     So every comparison between golfers is computed over swing hums only. A hum
-     with no strike heard still scores, still saves, still counts in the volume -
-     it just cannot set the bar for a swing it never was.                        */
-  const isSwing = r => r.through_impact != null;
-  const swings = rows.filter(isSwing);
+     HIS CALL, and he is the one who knows who is holding the phone: "people aren't
+     gonna test on their couch. We're just testing it now." THE COUCH HUMS ARE OURS.
+     Filtering the board to protect strangers from a distortion WE created - in a
+     week when the only heavy user is him - is optimising against the test harness
+     instead of the product. And the filter's cost is real and silent: a golfer
+     whose strike simply was not HEARD (a quiet chip, a bad mic, wind) disappears
+     off the board with no way to find out why.
+
+     ➡️ The board ranks every hum again. If real strangers ever do stack it with
+     couch hums, the number that says so is the one measured above, and the filter
+     is one line away.                                                           */
   document.getElementById('allN').textContent = rows.length;
-  document.getElementById('allAvg').textContent = swings.length
-    ? (swings.reduce((s,r)=>s+r.score,0)/swings.length).toFixed(0) : '—';
+  document.getElementById('allAvg').textContent = rows.length
+    ? (rows.reduce((s,r)=>s+r.score,0)/rows.length).toFixed(0) : '—';
 
   /* ⚠️ GROUP NAMED PLAYERS BY NAME, NOT BY DEVICE. A person is not a browser
      profile. Two Brixtons were already on this board — one from Safari, one from
@@ -1713,14 +1751,9 @@ async function paintAll(){
     rs.sort((a,b)=> a.at<b.at?-1:1);
     const first=rs.slice(0,3), last=rs.slice(-3);
     const avg=a=>a.reduce((s,r)=>s+r.score,0)/a.length;
-    /* Ranked on their best SWING, not their best hum. Someone whose only hums are
-       couch hums has not been beaten - they have not played, and the board says so
-       by leaving them off rather than by putting a 98 above a real golfer. */
-    const sw = rs.filter(isSwing);
-    const sfirst = sw.slice(0,3), slast = sw.slice(-3);
     return { id, name: (rs.find(r=>r.name)||{}).name || null,
-             best: sw.length ? Math.max(...sw.map(r=>r.score)) : null, n: sw.length,
-             gain: sw.length>=6 ? avg(slast)-avg(sfirst) : null };
+             best: Math.max(...rs.map(r=>r.score)), n: rs.length,
+             gain: rs.length>=6 ? avg(last)-avg(first) : null };
   })
   /* ── THE BOARD IS FOR NAMED GOLFERS ─────────────────────────────────────────
      A row reading "Unnamed golfer" is not a competitor, it is a blank in a list,
@@ -1732,7 +1765,7 @@ async function paintAll(){
      in the entire database — the only data that can prove or kill the hum/strike
      claim. They stay in Supabase and stay in the percentile. They are just not
      names on a scoreboard.                                                      */
-  .filter(p => p.name && p.best != null);
+  .filter(p => p.name);
 
   const tb=document.getElementById('allRows'); tb.innerHTML='';
   players.sort((a,b)=>b.best-a.best).slice(0,20).forEach((p,i)=>{
@@ -1741,7 +1774,7 @@ async function paintAll(){
       '</td><td><b>'+p.best.toFixed(0)+'</b></td><td>'+p.n+'</td>';
     tb.appendChild(tr);
   });
-  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No named swings up yet. Hum through one and you’re first.</td></tr>';
+  if(!players.length) tb.innerHTML='<tr><td colspan="4" class="hint">No names up yet. Add yours and you’re first.</td></tr>';
 
   const ib=document.getElementById('impRows'); ib.innerHTML='';
   const imp=players.filter(p=>p.gain!=null).sort((a,b)=>b.gain-a.gain).slice(0,10);
@@ -1751,7 +1784,7 @@ async function paintAll(){
       (p.gain>=0?'var(--go)':'var(--bad)')+'"><b>'+(p.gain>=0?'+':'')+p.gain.toFixed(1)+'</b></td>';
     ib.appendChild(tr);
   });
-  if(!imp.length) ib.innerHTML='<tr><td colspan="3" class="hint">Needs 6 swings from someone.</td></tr>';
+  if(!imp.length) ib.innerHTML='<tr><td colspan="3" class="hint">Needs 6 hums from someone.</td></tr>';
   // only once they are actually on the board
   const ask=document.getElementById('nameAsk');
   if(ask) ask.style.display = (!NAME && Store.mine().length) ? '' : 'none';
