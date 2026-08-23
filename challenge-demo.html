@@ -77,41 +77,16 @@ ol li{margin-bottom:7px}
 ol li:last-child{margin-bottom:0}
 ol b{color:var(--ink)}
 
-/* ── beta ────────────────────────────────────────────────────────────── */
-.betaPill{display:inline-block;background:var(--warn);color:#241a00;font-size:10px;
-          font-weight:800;letter-spacing:.12em;padding:4px 8px;border-radius:6px;
-          vertical-align:middle;margin-left:8px}
-.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;
-        background:var(--card);border:1px solid var(--warn);border-radius:16px;padding:16px 18px}
-.sw{width:52px;height:31px;border-radius:20px;background:var(--warn);position:relative;flex:none}
-.sw::after{content:'';position:absolute;top:3px;left:24px;width:25px;height:25px;
-           border-radius:50%;background:#fff}
-.swOff{background:var(--line)}
-.swOff::after{left:3px}
-
-/* ── the bucket ──────────────────────────────────────────────────────── */
-.swing{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);
-       border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s}
-.swing:active{transform:scale(.99)}
-.swing .sn{font-size:11px;color:var(--dim);letter-spacing:.1em;width:52px;flex:none}
-.swing .sc{font-size:19px;font-weight:800;width:34px;flex:none;text-align:right}
-.swing svg{flex:1;height:34px}
-.swing.best{border-color:var(--go);background:rgba(62,242,160,.09)}
-.swing.worst{border-color:var(--bad);background:rgba(255,107,107,.09)}
-.tag{font-size:9px;font-weight:800;letter-spacing:.1em;padding:3px 7px;border-radius:5px;flex:none}
-.tag.b{background:var(--go);color:#04120b} .tag.w{background:var(--bad);color:#2a0000}
-
 .note{font-size:12px;color:var(--dim);border-left:2px solid var(--line);
       padding-left:12px;margin:14px 0 0}
 .note b{color:var(--ink)}
-.note.warn{border-left-color:var(--warn)}
 
 .nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
      padding:22px 20px 26px;display:flex;justify-content:center}
 .navIn{width:100%;max-width:430px;display:flex;align-items:center;gap:14px}
 .dots{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer}
-.dot.on{background:var(--go)} .dot.bt{background:#3a3524} .dot.bt.on{background:var(--warn)}
+.dot.on{background:var(--go)}
 .nb{border:1px solid var(--line);background:var(--card);color:var(--ink);
     border-radius:11px;padding:11px 16px;font:600 14px/1 inherit;cursor:pointer}
 .nb:disabled{opacity:.3}
@@ -260,7 +235,7 @@ ol b{color:var(--ink)}
         </tbody>
       </table>
     </div>
-    <button class="btn ghost" onclick="go(5)">Next: the beta tab →</button>
+    <button class="btn ghost" onclick="go(0)">Start again</button>
     <p class="note"><b>The content engine, not a feature.</b> One new column in the database
     (which hum a hum was answering) and every challenge becomes a live, queryable fact.
     <b>“Nobody has beaten 99” stops being a claim and becomes a scoreboard</b> — a weekly
@@ -268,84 +243,6 @@ ol b{color:var(--ink)}
     <i>a 14-year-old beat me.</i></p>
   </section>
 
-  <!-- ═══ 6 · THE BETA TOGGLE ═══════════════════════════════════════════ -->
-  <section class="screen">
-    <div class="toggle">
-      <div>
-        <div style="font-weight:700;font-size:15px">Hit a few in a row<span class="betaPill">BETA</span></div>
-        <div style="font-size:13px;color:var(--dim);margin-top:3px">Leave the phone down for a
-        whole bucket.</div>
-      </div>
-      <div class="sw"></div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <h2>What this does</h2>
-      <p>Tap start once, put the phone down, and hit up to <b class="lede">8 balls</b>. It
-      listens the whole time and tries to find each swing on its own.</p>
-      <h2 style="margin-top:16px;color:var(--warn)">What it won’t do</h2>
-      <p style="margin-bottom:0"><b class="lede">It will miss some.</b> It finds a swing by
-      hearing the strike, and it doesn’t hear every one — quiet chips, wind, a mat.
-      <b class="lede">If it catches 5 of your 8, that’s the beta working.</b> Turn it off and
-      the meter goes back to one swing at a time.</p>
-    </div>
-    <button class="btn" onclick="go(6)">Start the bucket</button>
-    <p class="note warn"><b>Your call, and it’s the right one.</b> As a default this would have
-    been a disaster — we only detect the strike on <b>57%</b> of confirmed real shots, so it
-    would mis-cut roughly 4 swings in 10. Not one bad score you can shrug off: <b>a whole
-    bucket of them, with no way to tell which.</b></p>
-    <p class="note warn"><b>As an opt-in labelled BETA, that same 57% is fine</b> — the person
-    who flipped the switch was told, so a miss reads as the beta being a beta instead of the
-    tool being broken. <b>And it earns the number we need</b>: whether it finds enough swings
-    to ever be the default.</p>
-  </section>
-
-  <!-- ═══ 7 · THE HOLE HE FOUND ═════════════════════════════════════════ -->
-  <section class="screen">
-    <div class="card">
-      <h2 style="font-size:17px">Found 6 swings.</h2>
-      <p>You won’t remember all six. <b class="lede">Just tap the two you do.</b></p>
-      <div style="margin-top:14px">
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 1</span><span class="sc">88</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,16 L42,19 L62,15 L82,18 L102,17 L122,19 L142,16 L162,20 L198,17" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
-        </div>
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 2</span><span class="sc">64</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,17 L22,12 L42,24 L62,10 L82,26 L102,14 L122,22 L142,11 L162,25 L198,16" fill="none" stroke="#ffc857" stroke-width="2"/></svg>
-        </div>
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 3</span><span class="sc">93</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,17 L42,18 L62,16 L82,18 L102,17 L122,18 L142,17 L162,19 L198,18" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
-        </div>
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 4</span><span class="sc">41</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,8 L42,28 L62,6 L82,30 L102,9 L122,27 L142,7 L162,29 L198,14" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>
-        </div>
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 5</span><span class="sc">79</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,15 L42,21 L62,14 L82,20 L102,16 L122,21 L142,15 L162,22 L198,17" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
-        </div>
-        <div class="swing" onclick="mark(this,'best')">
-          <span class="sn">SWING 6</span><span class="sc">85</span>
-          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,16 L42,20 L62,15 L82,19 L102,17 L122,20 L142,16 L162,21 L198,18" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
-        </div>
-      </div>
-      <p id="ask" style="margin-top:14px;color:var(--go);font-weight:700">Tap the one you
-      struck best.</p>
-    </div>
-    <button class="btn ghost" onclick="go(0)">Start again</button>
-    <p class="note"><b>This was the hole, and you found it.</b> Nobody can rate six shots from
-    memory, and a made-up rating is worse than none — it is noise in the exact measurement the
-    whole product exists to make.</p>
-    <p class="note"><b>So don’t ask for six. Ask for two: your best and your worst.</b> Those
-    are the two a golfer genuinely remembers walking off — the flushed one and the chunked one.
-    Two taps for a whole bucket.</p>
-    <p class="note"><b>And they happen to be the two the data is starving for.</b> You have 9
-    rated shots and <b>eight of them you rated an 8</b> — one bad strike in the entire set. A
-    threshold like <i>“your best strikes come above 78”</i> needs a bottom half to draw the line
-    against. <b>Best-and-worst tagging produces exactly the spread that is missing</b> — and it
-    asks for less work than rating one shot does today.</p>
-  </section>
 </div>
 
 <div class="nav"><div class="navIn">
@@ -356,12 +253,11 @@ ol b{color:var(--ink)}
 
 <script>
 const NAMES=['1 · YOU JUST HUMMED','2 · WHAT ACTUALLY SENDS','3 · WHAT DAVE LANDS ON',
-             '4 · HEAD TO HEAD','5 · YOUR RECORD','6 · BETA · RANGE MODE','7 · RATING A BUCKET'];
-const BETA=[false,false,false,false,false,true,true];
+             '4 · HEAD TO HEAD','5 · YOUR RECORD'];
 const N=NAMES.length; let i=0;
 const dots=document.getElementById('dots');
 for(let k=0;k<N;k++){ const d=document.createElement('div');
-  d.className='dot'+(BETA[k]?' bt':''); d.onclick=()=>go(k); dots.appendChild(d); }
+  d.className='dot'; d.onclick=()=>go(k); dots.appendChild(d); }
 function go(n){
   i=Math.max(0,Math.min(N-1,n));
   document.querySelectorAll('.screen').forEach((s,k)=>s.classList.toggle('on',k===i));
@@ -370,21 +266,6 @@ function go(n){
   document.getElementById('prev').disabled=i===0;
   document.getElementById('next').disabled=i===N-1;
   scrollTo({top:0,behavior:'smooth'});
-}
-/* Two taps: best, then worst. Nothing else is asked for. */
-let phase='best';
-function mark(el,_){
-  if(phase==='done') return;
-  if(el.classList.contains('best')||el.classList.contains('worst')) return;
-  el.classList.add(phase);
-  const t=document.createElement('span');
-  t.className='tag '+(phase==='best'?'b':'w');
-  t.textContent=phase==='best'?'BEST':'WORST';
-  el.appendChild(t);
-  const ask=document.getElementById('ask');
-  if(phase==='best'){ phase='worst'; ask.textContent='Now tap the one you struck worst.'; }
-  else { phase='done'; ask.textContent='That’s it — two taps, whole bucket rated.';
-         ask.style.color='var(--dim)'; }
 }
 go(0);
 </script>
