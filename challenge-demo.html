@@ -14,36 +14,30 @@ html,body{margin:0;padding:0}
 body{
   background:var(--bg); color:var(--ink); min-height:100vh;
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
-  display:flex; flex-direction:column; align-items:center;
-  padding:0 0 96px;
+  display:flex; flex-direction:column; align-items:center; padding:0 0 96px;
 }
 .phone{width:100%;max-width:430px;padding:0 20px}
-
-/* ── the one-line header ─────────────────────────────────────────────── */
 .top{display:flex;align-items:center;justify-content:space-between;
      padding:18px 0 10px;font-size:11px;letter-spacing:.14em;color:var(--dim)}
-.top b{color:var(--go);font-weight:700}
-
-/* ── screens ─────────────────────────────────────────────────────────── */
+.top b{color:var(--go);font-weight:700;text-align:right}
 .screen{display:none;animation:in .32s cubic-bezier(.2,.7,.3,1)}
 .screen.on{display:block}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
       padding:20px;margin-bottom:14px}
-h1{font-size:26px;line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+h1{font-size:24px;line-height:1.18;margin:0 0 8px;letter-spacing:-.02em}
 h2{font-size:15px;margin:0 0 6px}
 p{margin:0 0 12px;color:var(--dim);font-size:15px}
+p:last-child{margin-bottom:0}
 .lede{color:var(--ink)}
 .big{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.04em}
 .band{font-size:12px;letter-spacing:.16em;color:var(--go);font-weight:700}
 
-/* ── the trace: the thing that actually travels ──────────────────────── */
 .trace{width:100%;height:96px;display:block}
 .ball{stroke:var(--ok);stroke-width:1.5;stroke-dasharray:4 4;opacity:.75}
 .ballLbl{fill:var(--ok);font-size:9px;letter-spacing:.12em;font-weight:700}
 
-/* ── buttons ─────────────────────────────────────────────────────────── */
 .btn{display:block;width:100%;border:0;border-radius:14px;padding:17px 18px;
      font:700 17px/1 inherit;background:var(--go);color:#04120b;cursor:pointer;
      margin-bottom:10px;transition:transform .12s}
@@ -51,7 +45,6 @@ p{margin:0 0 12px;color:var(--dim);font-size:15px}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:600}
 .hint{font-size:13px;color:var(--dim);text-align:center;margin:0 0 18px}
 
-/* ── the message mock ────────────────────────────────────────────────── */
 .thread{background:#000;border-radius:22px;padding:16px 14px 20px;border:1px solid var(--line)}
 .to{font-size:11px;color:var(--dim);text-align:center;margin-bottom:14px;letter-spacing:.1em}
 .bub{background:#1c86ff;color:#fff;border-radius:20px 20px 6px 20px;padding:12px 14px;
@@ -62,35 +55,66 @@ p{margin:0 0 12px;color:var(--dim);font-size:15px}
 .attTag{font-size:10px;letter-spacing:.14em;color:var(--go);font-weight:700}
 .link{font-size:12px;color:var(--ok);margin-top:10px;word-break:break-all}
 
-/* ── head to head ────────────────────────────────────────────────────── */
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:4px 0 14px}
 .vs .who{font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:4px}
 .vs .n{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
 .vs .mid{font-size:12px;color:var(--dim);letter-spacing:.1em}
 .win{color:var(--go)} .lose{color:var(--ink);opacity:.55}
-.verdict{font-size:17px;font-weight:700;margin:0 0 4px}
+.verdict{font-size:17px;font-weight:700;margin:0 0 4px;color:var(--ink)}
 
-/* ── the record table ────────────────────────────────────────────────── */
 table{width:100%;border-collapse:collapse;font-size:15px;margin-top:6px}
-th{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:left;font-weight:700;
-   padding:0 0 8px}
+th{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:left;font-weight:700;padding:0 0 8px}
 td{padding:9px 0;border-top:1px solid var(--line)}
 td.r,th.r{text-align:right}
 .beat{color:var(--go);font-weight:700}
 
-/* ── stepper ─────────────────────────────────────────────────────────── */
-.nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
-     padding:22px 20px 26px;display:flex;justify-content:center}
-.navIn{width:100%;max-width:430px;display:flex;align-items:center;gap:14px}
-.dots{display:flex;gap:6px;flex:1;justify-content:center}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--line)}
-.dot.on{background:var(--go)}
-.nb{border:1px solid var(--line);background:var(--card);color:var(--ink);
-    border-radius:11px;padding:11px 16px;font:600 14px/1 inherit;cursor:pointer}
-.nb:disabled{opacity:.3}
+/* ── the coaching block on the landing ───────────────────────────────── */
+.why{background:rgba(62,242,160,.06);border:1px solid rgba(62,242,160,.22);
+     border-radius:14px;padding:16px;margin-bottom:14px}
+.why h2{color:var(--go);font-size:14px;letter-spacing:.02em}
+ol{margin:0;padding-left:20px;color:var(--dim);font-size:15px}
+ol li{margin-bottom:7px}
+ol li:last-child{margin-bottom:0}
+ol b{color:var(--ink)}
+
+/* ── beta ────────────────────────────────────────────────────────────── */
+.betaPill{display:inline-block;background:var(--warn);color:#241a00;font-size:10px;
+          font-weight:800;letter-spacing:.12em;padding:4px 8px;border-radius:6px;
+          vertical-align:middle;margin-left:8px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;
+        background:var(--card);border:1px solid var(--warn);border-radius:16px;padding:16px 18px}
+.sw{width:52px;height:31px;border-radius:20px;background:var(--warn);position:relative;flex:none}
+.sw::after{content:'';position:absolute;top:3px;left:24px;width:25px;height:25px;
+           border-radius:50%;background:#fff}
+.swOff{background:var(--line)}
+.swOff::after{left:3px}
+
+/* ── the bucket ──────────────────────────────────────────────────────── */
+.swing{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);
+       border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.swing:active{transform:scale(.99)}
+.swing .sn{font-size:11px;color:var(--dim);letter-spacing:.1em;width:52px;flex:none}
+.swing .sc{font-size:19px;font-weight:800;width:34px;flex:none;text-align:right}
+.swing svg{flex:1;height:34px}
+.swing.best{border-color:var(--go);background:rgba(62,242,160,.09)}
+.swing.worst{border-color:var(--bad);background:rgba(255,107,107,.09)}
+.tag{font-size:9px;font-weight:800;letter-spacing:.1em;padding:3px 7px;border-radius:5px;flex:none}
+.tag.b{background:var(--go);color:#04120b} .tag.w{background:var(--bad);color:#2a0000}
+
 .note{font-size:12px;color:var(--dim);border-left:2px solid var(--line);
       padding-left:12px;margin:14px 0 0}
 .note b{color:var(--ink)}
+.note.warn{border-left-color:var(--warn)}
+
+.nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
+     padding:22px 20px 26px;display:flex;justify-content:center}
+.navIn{width:100%;max-width:430px;display:flex;align-items:center;gap:14px}
+.dots{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer}
+.dot.on{background:var(--go)} .dot.bt{background:#3a3524} .dot.bt.on{background:var(--warn)}
+.nb{border:1px solid var(--line);background:var(--card);color:var(--ink);
+    border-radius:11px;padding:11px 16px;font:600 14px/1 inherit;cursor:pointer}
+.nb:disabled{opacity:.3}
 </style>
 </head>
 <body>
@@ -98,30 +122,30 @@ td.r,th.r{text-align:right}
 <div class="phone">
   <div class="top"><span>THE CHALLENGE</span><b id="stepName">1 · YOU JUST HUMMED</b></div>
 
-  <!-- ═══ 1 · YOUR RESULT ═══════════════════════════════════════════════ -->
-  <section class="screen on" id="s0">
+  <!-- ═══ 1 ═════════════════════════════════════════════════════════════ -->
+  <section class="screen on">
     <div class="card">
       <div class="band">ELITE</div>
       <div class="big">96</div>
-      <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none" aria-hidden="true">
+      <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none">
         <line class="ball" x1="248" y1="6" x2="248" y2="90"/>
         <text class="ballLbl" x="252" y="16">THE BALL</text>
         <path d="M6,54 L26,52 L46,55 L66,51 L86,54 L106,52 L126,55 L146,53 L166,51
                  L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
               fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
-      <p style="margin:10px 0 0"><span class="lede"><b>You held it all the way through the
+      <p style="margin-top:10px"><span class="lede"><b>You held it all the way through the
       ball.</b></span> Your line barely moved — that is what a 96 looks like.</p>
     </div>
     <button class="btn" onclick="go(1)">Send it to a mate</button>
     <p class="hint">One tap. No account, nothing to install.</p>
-    <p class="note"><b>Why this button and not “Share”.</b> “Share” means broadcast, and a
-    number broadcast to nobody in particular gets ignored. <b>A mate is a person</b> — and a
-    challenge aimed at one person is the only share anyone actually completes.</p>
+    <p class="note"><b>Not “Share”.</b> Share means broadcast, and a number broadcast to nobody
+    in particular gets ignored. <b>A mate is a person</b> — and a challenge aimed at one person
+    is the only share anyone actually completes.</p>
   </section>
 
-  <!-- ═══ 2 · WHAT ACTUALLY SENDS ═══════════════════════════════════════ -->
-  <section class="screen" id="s1">
+  <!-- ═══ 2 ═════════════════════════════════════════════════════════════ -->
+  <section class="screen">
     <div class="thread">
       <div class="to">TO: DAVE</div>
       <div class="bub">
@@ -141,38 +165,55 @@ td.r,th.r{text-align:right}
     <p class="note" style="margin-top:18px"><b>The picture is the message, not the number.</b>
     Wordle did not go viral on scores — it went viral on the little grid, because the
     <b>shape</b> of how you did is legible to someone who has never played.
-    <b>Your trace is that grid.</b> Dave understands a flat green line and a wobbly one
-    instantly, before he taps anything.</p>
-    <p class="note"><b>And it works even if he never taps.</b> The image carries the whole
-    idea, so the message is worth sending on its own — the link is the upside, not the point.</p>
+    <b>Your trace is that grid.</b></p>
+    <p class="note"><b>It works even if Dave never taps.</b> The image carries the whole idea,
+    so the message is worth sending on its own — the link is the upside, not the point.</p>
   </section>
 
-  <!-- ═══ 3 · WHAT DAVE LANDS ON ════════════════════════════════════════ -->
-  <section class="screen" id="s2">
-    <div class="card" style="text-align:center">
-      <p style="font-size:13px;letter-spacing:.1em;margin-bottom:14px">BRIXTON CHALLENGED YOU</p>
-      <div class="big" style="font-size:56px">96</div>
+  <!-- ═══ 3 · THE LANDING, NOW WITH THE COACHING ════════════════════════ -->
+  <section class="screen">
+    <div class="card" style="text-align:center;padding-bottom:16px">
+      <p style="font-size:13px;letter-spacing:.1em;margin-bottom:12px">BRIXTON CHALLENGED YOU</p>
+      <div class="big" style="font-size:52px">96</div>
       <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none" style="opacity:.5">
         <line class="ball" x1="248" y1="6" x2="248" y2="90"/>
-        <text class="ballLbl" x="252" y="16">THE BALL</text>
         <path d="M6,54 L26,52 L46,55 L66,51 L86,54 L106,52 L126,55 L146,53 L166,51
                  L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
               fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
-      <h1 style="font-size:22px;margin-top:14px">Hum through your swing.<br>Hold a steadier line.</h1>
-      <p style="margin-bottom:0">Phone on the ground. Hum from address through the ball.</p>
     </div>
+
+    <div class="why">
+      <h2>WHY YOU’D BOTHER</h2>
+      <p style="color:var(--ink);margin-bottom:8px"><b>You cannot hold a steady note while
+      you’re squeezing the club.</b></p>
+      <p style="margin-bottom:0">Tension shows up in your voice before you can feel it in your
+      hands. So a flat line means a loose swing — and loose is what flushes it.
+      <b class="lede">Hum a steady note through the ball and the tension has nowhere to hide.</b></p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:10px">HOW TO DO IT</h2>
+      <ol>
+        <li>Phone <b>on the ground</b> next to your ball, screen up.</li>
+        <li>Tap start, then hum <b>one single note</b> — begin at address.</li>
+        <li><b>Keep it going right through the ball.</b> Don’t change the note, don’t get
+            louder. Just hold it.</li>
+      </ol>
+    </div>
+
     <button class="btn" onclick="go(3)">Tap once, then hum</button>
     <p class="hint">It stops on its own.</p>
-    <p class="note"><b>This screen has one job: get Dave humming inside five seconds.</b>
-    No signup, no explainer, no tour. The research line that matters most:
-    <b>virality is not the invite, it is what happens after the invite is accepted.</b>
-    Every cold arrival we have ever had bounced because it landed on an empty tool with no
-    reason to start. <b>Brixton’s 96 is the reason.</b></p>
+    <p class="note"><b>This is the screen you flagged.</b> “Make a swing” is an instruction with
+    no reason attached, and a stranger has no reason yet. <b>The promise has to come before the
+    ask</b> — reduce tension, flush it — and then the three steps so nobody has to guess what
+    “hum through your swing” means.</p>
+    <p class="note"><b>It is also your own line:</b> the fix is never where you think. He came
+    here to beat a score and leaves knowing his hands were the problem.</p>
   </section>
 
-  <!-- ═══ 4 · HEAD TO HEAD ══════════════════════════════════════════════ -->
-  <section class="screen" id="s3">
+  <!-- ═══ 4 ═════════════════════════════════════════════════════════════ -->
+  <section class="screen">
     <div class="card">
       <div class="vs">
         <div><div class="who">YOU</div><div class="n lose">91</div></div>
@@ -190,25 +231,22 @@ td.r,th.r{text-align:right}
               fill="none" stroke="#ffc857" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
       <p class="verdict" style="margin-top:12px">You lost it right at the ball.</p>
-      <p style="margin-bottom:0">Dead steady until impact, then it jumped. <b class="lede">You’re
-      bracing for the hit</b> — Brixton held his line straight through.</p>
+      <p>Dead steady until impact, then it jumped. <b class="lede">You’re bracing for the
+      hit</b> — Brixton held his line straight through.</p>
     </div>
     <button class="btn" onclick="go(4)">Send it back to Brixton</button>
     <button class="btn ghost" onclick="go(4)">Text myself my board</button>
-    <p class="note"><b>Two buttons, both doing a job.</b> “Send it back” is the loop — every
-    challenge answered creates the next challenge, so one send becomes a rally instead of a
-    dead end.</p>
-    <p class="note"><b>“Text myself my board” is where the data problem gets solved</b>, and
-    this is the right moment for it. <b>Dave now has something to lose.</b> Asking a stranger
-    who owns nothing to save it is a chore; asking a man who just got beaten by 5 to keep his
-    board so he can defend it is a favour. <b>No name typed, no account</b> — the link is his
-    identity, so his hums follow him to any phone or browser.</p>
-    <p class="note"><b>And notice he still has not told us who he is.</b> That is on purpose —
-    9 of 10 golfers never will.</p>
+    <p class="note"><b>“Send it back” is the loop</b> — every challenge answered creates the
+    next one, so one send becomes a rally instead of a dead end.</p>
+    <p class="note"><b>“Text myself my board” is where the data gets saved</b>, and this is the
+    moment for it: <b>Dave now has something to lose.</b> Asking a stranger who owns nothing to
+    save it is a chore; asking a man who just got beaten by 5 to keep his board so he can
+    defend it is a favour. <b>No name typed, no account</b> — his hums follow the link to any
+    phone.</p>
   </section>
 
-  <!-- ═══ 5 · THE RECORD ════════════════════════════════════════════════ -->
-  <section class="screen" id="s4">
+  <!-- ═══ 5 ═════════════════════════════════════════════════════════════ -->
+  <section class="screen">
     <div class="card">
       <h2>Your 96 is still standing</h2>
       <p style="margin-bottom:2px">9 golfers have tried it. 2 have beaten it.</p>
@@ -222,13 +260,91 @@ td.r,th.r{text-align:right}
         </tbody>
       </table>
     </div>
+    <button class="btn ghost" onclick="go(5)">Next: the beta tab →</button>
+    <p class="note"><b>The content engine, not a feature.</b> One new column in the database
+    (which hum a hum was answering) and every challenge becomes a live, queryable fact.
+    <b>“Nobody has beaten 99” stops being a claim and becomes a scoreboard</b> — a weekly
+    series, not a one-off: <i>still undefeated</i> → <i>someone finally beat me</i> →
+    <i>a 14-year-old beat me.</i></p>
+  </section>
+
+  <!-- ═══ 6 · THE BETA TOGGLE ═══════════════════════════════════════════ -->
+  <section class="screen">
+    <div class="toggle">
+      <div>
+        <div style="font-weight:700;font-size:15px">Hit a few in a row<span class="betaPill">BETA</span></div>
+        <div style="font-size:13px;color:var(--dim);margin-top:3px">Leave the phone down for a
+        whole bucket.</div>
+      </div>
+      <div class="sw"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>What this does</h2>
+      <p>Tap start once, put the phone down, and hit up to <b class="lede">8 balls</b>. It
+      listens the whole time and tries to find each swing on its own.</p>
+      <h2 style="margin-top:16px;color:var(--warn)">What it won’t do</h2>
+      <p style="margin-bottom:0"><b class="lede">It will miss some.</b> It finds a swing by
+      hearing the strike, and it doesn’t hear every one — quiet chips, wind, a mat.
+      <b class="lede">If it catches 5 of your 8, that’s the beta working.</b> Turn it off and
+      the meter goes back to one swing at a time.</p>
+    </div>
+    <button class="btn" onclick="go(6)">Start the bucket</button>
+    <p class="note warn"><b>Your call, and it’s the right one.</b> As a default this would have
+    been a disaster — we only detect the strike on <b>57%</b> of confirmed real shots, so it
+    would mis-cut roughly 4 swings in 10. Not one bad score you can shrug off: <b>a whole
+    bucket of them, with no way to tell which.</b></p>
+    <p class="note warn"><b>As an opt-in labelled BETA, that same 57% is fine</b> — the person
+    who flipped the switch was told, so a miss reads as the beta being a beta instead of the
+    tool being broken. <b>And it earns the number we need</b>: whether it finds enough swings
+    to ever be the default.</p>
+  </section>
+
+  <!-- ═══ 7 · THE HOLE HE FOUND ═════════════════════════════════════════ -->
+  <section class="screen">
+    <div class="card">
+      <h2 style="font-size:17px">Found 6 swings.</h2>
+      <p>You won’t remember all six. <b class="lede">Just tap the two you do.</b></p>
+      <div style="margin-top:14px">
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 1</span><span class="sc">88</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,16 L42,19 L62,15 L82,18 L102,17 L122,19 L142,16 L162,20 L198,17" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
+        </div>
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 2</span><span class="sc">64</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,17 L22,12 L42,24 L62,10 L82,26 L102,14 L122,22 L142,11 L162,25 L198,16" fill="none" stroke="#ffc857" stroke-width="2"/></svg>
+        </div>
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 3</span><span class="sc">93</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,17 L42,18 L62,16 L82,18 L102,17 L122,18 L142,17 L162,19 L198,18" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
+        </div>
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 4</span><span class="sc">41</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,8 L42,28 L62,6 L82,30 L102,9 L122,27 L142,7 L162,29 L198,14" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>
+        </div>
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 5</span><span class="sc">79</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,15 L42,21 L62,14 L82,20 L102,16 L122,21 L142,15 L162,22 L198,17" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
+        </div>
+        <div class="swing" onclick="mark(this,'best')">
+          <span class="sn">SWING 6</span><span class="sc">85</span>
+          <svg viewBox="0 0 200 34" preserveAspectRatio="none"><path d="M2,18 L22,16 L42,20 L62,15 L82,19 L102,17 L122,20 L142,16 L162,21 L198,18" fill="none" stroke="#3ef2a0" stroke-width="2"/></svg>
+        </div>
+      </div>
+      <p id="ask" style="margin-top:14px;color:var(--go);font-weight:700">Tap the one you
+      struck best.</p>
+    </div>
     <button class="btn ghost" onclick="go(0)">Start again</button>
-    <p class="note"><b>This screen is the content engine, not a feature.</b> One new column in
-    the database (which hum a hum was answering) and every challenge becomes a live, queryable
-    fact. <b>“Nobody has beaten 99” stops being a claim and becomes a scoreboard</b> —
-    and it is a weekly series, not a one-off post: <i>still undefeated</i> → <i>someone
-    finally beat me</i> → <i>a 14-year-old beat me.</i></p>
-    <p class="note"><b>Every post drives people into the tool that writes the next post.</b></p>
+    <p class="note"><b>This was the hole, and you found it.</b> Nobody can rate six shots from
+    memory, and a made-up rating is worse than none — it is noise in the exact measurement the
+    whole product exists to make.</p>
+    <p class="note"><b>So don’t ask for six. Ask for two: your best and your worst.</b> Those
+    are the two a golfer genuinely remembers walking off — the flushed one and the chunked one.
+    Two taps for a whole bucket.</p>
+    <p class="note"><b>And they happen to be the two the data is starving for.</b> You have 9
+    rated shots and <b>eight of them you rated an 8</b> — one bad strike in the entire set. A
+    threshold like <i>“your best strikes come above 78”</i> needs a bottom half to draw the line
+    against. <b>Best-and-worst tagging produces exactly the spread that is missing</b> — and it
+    asks for less work than rating one shot does today.</p>
   </section>
 </div>
 
@@ -240,10 +356,12 @@ td.r,th.r{text-align:right}
 
 <script>
 const NAMES=['1 · YOU JUST HUMMED','2 · WHAT ACTUALLY SENDS','3 · WHAT DAVE LANDS ON',
-             '4 · HEAD TO HEAD','5 · YOUR RECORD'];
+             '4 · HEAD TO HEAD','5 · YOUR RECORD','6 · BETA · RANGE MODE','7 · RATING A BUCKET'];
+const BETA=[false,false,false,false,false,true,true];
 const N=NAMES.length; let i=0;
 const dots=document.getElementById('dots');
-for(let k=0;k<N;k++){ const d=document.createElement('div'); d.className='dot'; d.onclick=()=>go(k); dots.appendChild(d); }
+for(let k=0;k<N;k++){ const d=document.createElement('div');
+  d.className='dot'+(BETA[k]?' bt':''); d.onclick=()=>go(k); dots.appendChild(d); }
 function go(n){
   i=Math.max(0,Math.min(N-1,n));
   document.querySelectorAll('.screen').forEach((s,k)=>s.classList.toggle('on',k===i));
@@ -252,6 +370,21 @@ function go(n){
   document.getElementById('prev').disabled=i===0;
   document.getElementById('next').disabled=i===N-1;
   scrollTo({top:0,behavior:'smooth'});
+}
+/* Two taps: best, then worst. Nothing else is asked for. */
+let phase='best';
+function mark(el,_){
+  if(phase==='done') return;
+  if(el.classList.contains('best')||el.classList.contains('worst')) return;
+  el.classList.add(phase);
+  const t=document.createElement('span');
+  t.className='tag '+(phase==='best'?'b':'w');
+  t.textContent=phase==='best'?'BEST':'WORST';
+  el.appendChild(t);
+  const ask=document.getElementById('ask');
+  if(phase==='best'){ phase='worst'; ask.textContent='Now tap the one you struck worst.'; }
+  else { phase='done'; ask.textContent='That’s it — two taps, whole bucket rated.';
+         ask.style.color='var(--dim)'; }
 }
 go(0);
 </script>
