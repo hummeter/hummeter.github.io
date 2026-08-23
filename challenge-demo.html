@@ -11,11 +11,9 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
-body{
-  background:var(--bg); color:var(--ink); min-height:100vh;
+body{background:var(--bg);color:var(--ink);min-height:100vh;
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
-  display:flex; flex-direction:column; align-items:center; padding:0 0 96px;
-}
+  display:flex;flex-direction:column;align-items:center;padding:0 0 96px}
 .phone{width:100%;max-width:430px;padding:0 20px}
 .top{display:flex;align-items:center;justify-content:space-between;
      padding:18px 0 10px;font-size:11px;letter-spacing:.14em;color:var(--dim)}
@@ -26,9 +24,8 @@ body{
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
       padding:20px;margin-bottom:14px}
-h1{font-size:24px;line-height:1.18;margin:0 0 8px;letter-spacing:-.02em}
 h2{font-size:15px;margin:0 0 6px}
-p{margin:0 0 12px;color:var(--dim);font-size:15px}
+p{margin:0 0 10px;color:var(--dim);font-size:15px}
 p:last-child{margin-bottom:0}
 .lede{color:var(--ink)}
 .big{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.04em}
@@ -48,11 +45,14 @@ p:last-child{margin-bottom:0}
 .thread{background:#000;border-radius:22px;padding:16px 14px 20px;border:1px solid var(--line)}
 .to{font-size:11px;color:var(--dim);text-align:center;margin-bottom:14px;letter-spacing:.1em}
 .bub{background:#1c86ff;color:#fff;border-radius:20px 20px 6px 20px;padding:12px 14px;
-     margin-left:auto;max-width:88%;font-size:15px}
+     margin-left:auto;max-width:90%;font-size:15px}
 .attInner{background:#0b0f14;border:1px solid var(--line);border-radius:14px;padding:14px}
 .attTop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .attScore{font-size:30px;font-weight:800;letter-spacing:-.03em}
 .attTag{font-size:10px;letter-spacing:.14em;color:var(--go);font-weight:700}
+.attFoot{font-size:10px;letter-spacing:.1em;color:var(--dim);margin-top:8px;
+         display:flex;justify-content:space-between}
+.attFoot b{color:var(--go)}
 .link{font-size:12px;color:var(--ok);margin-top:10px;word-break:break-all}
 
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:4px 0 14px}
@@ -60,7 +60,7 @@ p:last-child{margin-bottom:0}
 .vs .n{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
 .vs .mid{font-size:12px;color:var(--dim);letter-spacing:.1em}
 .win{color:var(--go)} .lose{color:var(--ink);opacity:.55}
-.verdict{font-size:17px;font-weight:700;margin:0 0 4px;color:var(--ink)}
+.verdict{font-size:18px;font-weight:700;margin:0 0 4px;color:var(--ink)}
 
 table{width:100%;border-collapse:collapse;font-size:15px;margin-top:6px}
 th{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:left;font-weight:700;padding:0 0 8px}
@@ -68,14 +68,18 @@ td{padding:9px 0;border-top:1px solid var(--line)}
 td.r,th.r{text-align:right}
 .beat{color:var(--go);font-weight:700}
 
-/* ── the coaching block on the landing ───────────────────────────────── */
-.why{background:rgba(62,242,160,.06);border:1px solid rgba(62,242,160,.22);
-     border-radius:14px;padding:16px;margin-bottom:14px}
-.why h2{color:var(--go);font-size:14px;letter-spacing:.02em}
-ol{margin:0;padding-left:20px;color:var(--dim);font-size:15px}
-ol li{margin-bottom:7px}
-ol li:last-child{margin-bottom:0}
-ol b{color:var(--ink)}
+/* ── THE FOLLOW MOMENT ───────────────────────────────────────────────── */
+.fix{background:rgba(62,242,160,.07);border:1px solid rgba(62,242,160,.3);
+     border-radius:16px;padding:18px;margin-bottom:12px}
+.fix .k{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.fix p{margin-bottom:12px}
+.ig{display:flex;align-items:center;gap:11px;background:#0b0f14;border:1px solid var(--line);
+    border-radius:12px;padding:11px 13px;cursor:pointer}
+.ig .av{width:34px;height:34px;border-radius:50%;flex:none;
+        background:linear-gradient(135deg,#3ef2a0,#7fd4ff)}
+.ig .h{font-weight:700;font-size:14px}
+.ig .s{font-size:11px;color:var(--dim)}
+.ig .go{margin-left:auto;font-size:12px;font-weight:800;color:var(--go);letter-spacing:.08em}
 
 .note{font-size:12px;color:var(--dim);border-left:2px solid var(--line);
       padding-left:12px;margin:14px 0 0}
@@ -84,7 +88,7 @@ ol b{color:var(--ink)}
 .nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
      padding:22px 20px 26px;display:flex;justify-content:center}
 .navIn{width:100%;max-width:430px;display:flex;align-items:center;gap:14px}
-.dots{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.dots{display:flex;gap:6px;flex:1;justify-content:center}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer}
 .dot.on{background:var(--go)}
 .nb{border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -109,14 +113,11 @@ ol b{color:var(--ink)}
                  L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
               fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
-      <p style="margin-top:10px"><span class="lede"><b>You held it all the way through the
-      ball.</b></span> Your line barely moved — that is what a 96 looks like.</p>
+      <p style="margin-top:10px" class="lede"><b>You held it straight through the ball.</b></p>
     </div>
-    <button class="btn" onclick="go(1)">Send it to a mate</button>
-    <p class="hint">One tap. No account, nothing to install.</p>
-    <p class="note"><b>Not “Share”.</b> Share means broadcast, and a number broadcast to nobody
-    in particular gets ignored. <b>A mate is a person</b> — and a challenge aimed at one person
-    is the only share anyone actually completes.</p>
+    <button class="btn" onclick="go(1)">Challenge a mate</button>
+    <p class="hint">No account. Nothing to install.</p>
+    <p class="note"><b>A mate, not “share”.</b> A number broadcast to nobody gets ignored.</p>
   </section>
 
   <!-- ═══ 2 ═════════════════════════════════════════════════════════════ -->
@@ -124,28 +125,27 @@ ol b{color:var(--ink)}
     <div class="thread">
       <div class="to">TO: DAVE</div>
       <div class="bub">
-        Bet you can’t hold a steadier line than this.
+        Hum one note through your golf swing — this scores how steady you held it. I got 96.
         <div class="attInner" style="margin-top:10px">
           <div class="attTop"><span class="attScore">96</span><span class="attTag">BEAT IT</span></div>
-          <svg class="trace" style="height:60px" viewBox="0 0 300 60" preserveAspectRatio="none">
-            <line class="ball" x1="218" y1="4" x2="218" y2="56"/>
-            <path d="M4,32 L24,30 L44,33 L64,29 L84,32 L104,30 L124,33 L144,31 L164,29
-                     L184,32 L204,30 L224,33 L244,31 L264,35 L294,31"
+          <svg class="trace" style="height:56px" viewBox="0 0 300 56" preserveAspectRatio="none">
+            <line class="ball" x1="218" y1="4" x2="218" y2="52"/>
+            <path d="M4,30 L24,28 L44,31 L64,27 L84,30 L104,28 L124,31 L144,29 L164,27
+                     L184,30 L204,28 L224,31 L244,29 L264,33 L294,29"
                   fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
+          <div class="attFoot"><span>THE HUM METER</span><b>@BRIXTON_PG</b></div>
         </div>
         <div class="link">hummeter.github.io/#vs=8f2a…</div>
       </div>
     </div>
-    <p class="note" style="margin-top:18px"><b>The picture is the message, not the number.</b>
-    Wordle did not go viral on scores — it went viral on the little grid, because the
-    <b>shape</b> of how you did is legible to someone who has never played.
-    <b>Your trace is that grid.</b></p>
-    <p class="note"><b>It works even if Dave never taps.</b> The image carries the whole idea,
-    so the message is worth sending on its own — the link is the upside, not the point.</p>
+    <p class="note" style="margin-top:18px"><b>The old line told Dave nothing.</b> This one says
+    what it is and what to do, in one sentence.</p>
+    <p class="note"><b>Your handle rides on the card</b> — so it travels with every forward,
+    even from people who never met you.</p>
   </section>
 
-  <!-- ═══ 3 · THE LANDING, NOW WITH THE COACHING ════════════════════════ -->
+  <!-- ═══ 3 ═════════════════════════════════════════════════════════════ -->
   <section class="screen">
     <div class="card" style="text-align:center;padding-bottom:16px">
       <p style="font-size:13px;letter-spacing:.1em;margin-bottom:12px">BRIXTON CHALLENGED YOU</p>
@@ -158,36 +158,19 @@ ol b{color:var(--ink)}
       </svg>
     </div>
 
-    <div class="why">
-      <h2>WHY YOU’D BOTHER</h2>
-      <p style="color:var(--ink);margin-bottom:8px"><b>You cannot hold a steady note while
-      you’re squeezing the club.</b></p>
-      <p style="margin-bottom:0">Tension shows up in your voice before you can feel it in your
-      hands. So a flat line means a loose swing — and loose is what flushes it.
-      <b class="lede">Hum a steady note through the ball and the tension has nowhere to hide.</b></p>
-    </div>
-
     <div class="card">
-      <h2 style="margin-bottom:10px">HOW TO DO IT</h2>
-      <ol>
-        <li>Phone <b>on the ground</b> next to your ball, screen up.</li>
-        <li>Tap start, then hum <b>one single note</b> — begin at address.</li>
-        <li><b>Keep it going right through the ball.</b> Don’t change the note, don’t get
-            louder. Just hold it.</li>
-      </ol>
+      <p class="lede" style="font-size:17px;font-weight:700;margin-bottom:8px">Keep a steady hum
+      through your swing and you’ll strike it more consistent.</p>
+      <p style="margin-bottom:0">Phone on the ground. Hum one note from address through the ball.</p>
     </div>
 
     <button class="btn" onclick="go(3)">Tap once, then hum</button>
     <p class="hint">It stops on its own.</p>
-    <p class="note"><b>This is the screen you flagged.</b> “Make a swing” is an instruction with
-    no reason attached, and a stranger has no reason yet. <b>The promise has to come before the
-    ask</b> — reduce tension, flush it — and then the three steps so nobody has to guess what
-    “hum through your swing” means.</p>
-    <p class="note"><b>It is also your own line:</b> the fix is never where you think. He came
-    here to beat a score and leaves knowing his hands were the problem.</p>
+    <p class="note"><b>Your line, your words.</b> One reason, one instruction — the header and
+    the numbered list are gone.</p>
   </section>
 
-  <!-- ═══ 4 ═════════════════════════════════════════════════════════════ -->
+  <!-- ═══ 4 · THE RESULT — AND THE FOLLOW ═══════════════════════════════ -->
   <section class="screen">
     <div class="card">
       <div class="vs">
@@ -206,27 +189,34 @@ ol b{color:var(--ink)}
               fill="none" stroke="#ffc857" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
       <p class="verdict" style="margin-top:12px">You lost it right at the ball.</p>
-      <p>Dead steady until impact, then it jumped. <b class="lede">You’re bracing for the
-      hit</b> — Brixton held his line straight through.</p>
+      <p style="margin-bottom:0">You’re bracing for the hit.</p>
     </div>
+
+    <div class="fix">
+      <div class="k">Want the fix?</div>
+      <p>Brixton posts the drill for exactly this.</p>
+      <div class="ig">
+        <div class="av"></div>
+        <div><div class="h">@brixton_pg</div><div class="s">The tension drill</div></div>
+        <div class="go">FOLLOW</div>
+      </div>
+    </div>
+
     <button class="btn" onclick="go(4)">Send it back to Brixton</button>
     <button class="btn ghost" onclick="go(4)">Text myself my board</button>
-    <p class="note"><b>“Send it back” is the loop</b> — every challenge answered creates the
-    next one, so one send becomes a rally instead of a dead end.</p>
-    <p class="note"><b>“Text myself my board” is where the data gets saved</b>, and this is the
-    moment for it: <b>Dave now has something to lose.</b> Asking a stranger who owns nothing to
-    save it is a chore; asking a man who just got beaten by 5 to keep his board so he can
-    defend it is a favour. <b>No name typed, no account</b> — his hums follow the link to any
-    phone.</p>
+    <p class="note"><b>This is the piece that was missing, and you were right to call it.</b>
+    The score hands Dave a problem the tool cannot solve. <b>The fix lives on your page.</b></p>
+    <p class="note"><b>Not “follow for more” — that’s a beg.</b> “Here’s the fix” is a payoff,
+    and it only works because the number came first.</p>
   </section>
 
   <!-- ═══ 5 ═════════════════════════════════════════════════════════════ -->
   <section class="screen">
     <div class="card">
       <h2>Your 96 is still standing</h2>
-      <p style="margin-bottom:2px">9 golfers have tried it. 2 have beaten it.</p>
+      <p style="margin-bottom:2px">9 have tried. 2 have beaten it.</p>
       <table>
-        <thead><tr><th>WHO</th><th class="r">THEIR BEST</th></tr></thead>
+        <thead><tr><th>WHO</th><th class="r">BEST</th></tr></thead>
         <tbody>
           <tr><td>Ellie</td><td class="r beat">98</td></tr>
           <tr><td>Sam</td><td class="r beat">97</td></tr>
@@ -236,13 +226,11 @@ ol b{color:var(--ink)}
       </table>
     </div>
     <button class="btn ghost" onclick="go(0)">Start again</button>
-    <p class="note"><b>The content engine, not a feature.</b> One new column in the database
-    (which hum a hum was answering) and every challenge becomes a live, queryable fact.
-    <b>“Nobody has beaten 99” stops being a claim and becomes a scoreboard</b> — a weekly
-    series, not a one-off: <i>still undefeated</i> → <i>someone finally beat me</i> →
-    <i>a 14-year-old beat me.</i></p>
+    <p class="note"><b>This is the reel.</b> “Nobody has beaten my 99” stops being a claim and
+    becomes a scoreboard — and it reloads every week.</p>
+    <p class="note"><b>The loop that actually grows you:</b> you post the scoreboard → people
+    come to try → they lose → they want the fix → the fix is on your page.</p>
   </section>
-
 </div>
 
 <div class="nav"><div class="navIn">
@@ -252,8 +240,8 @@ ol b{color:var(--ink)}
 </div></div>
 
 <script>
-const NAMES=['1 · YOU JUST HUMMED','2 · WHAT ACTUALLY SENDS','3 · WHAT DAVE LANDS ON',
-             '4 · HEAD TO HEAD','5 · YOUR RECORD'];
+const NAMES=['1 · YOU JUST HUMMED','2 · WHAT SENDS','3 · WHAT DAVE LANDS ON',
+             '4 · RESULT + THE FOLLOW','5 · YOUR RECORD'];
 const N=NAMES.length; let i=0;
 const dots=document.getElementById('dots');
 for(let k=0;k<N;k++){ const d=document.createElement('div');
