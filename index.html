@@ -318,6 +318,13 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
            it does. recoveryUI() stays in the source for whenever it is needed. -->
       <span style="text-decoration:underline;cursor:pointer" id="meRename">Change your name</span>
     </p>
+    <!-- The answer to "how does a different browser know it's me". Not a name (9 in
+         10 golfers never give one) and not a code to type. A link they keep. -->
+    <p class="foot" id="meLinkWrap" style="display:none;text-align:left;margin-top:10px">
+      <span style="text-decoration:underline;cursor:pointer" id="meLink">Text yourself
+      your board link</span> — open it on any phone or browser and these hums come with you.
+      <span id="meLinkMsg" style="color:var(--go)"></span>
+    </p>
   </section>
 
   <!-- ── LEADERBOARD ───────────────────────────────────────────────────── -->
@@ -450,7 +457,29 @@ function readHandoff(){
     return { id, name: nm.join('|') || '' };
   }catch(e){ return null; }
 }
-const _hand = readHandoff();
+/* ── THE BOARD LINK — IDENTITY THAT IS NOT A BROWSER ──────────────────────────
+   WHY THIS EXISTS, from the database on 2026-08-23: 34 browsers have hummed, and
+   31 of them have NO NAME, ever. Since the name ask was rebuilt on 8/22, SEVEN
+   browsers hummed 2+ times (30 hums, one of them 13 times) and not one gave a
+   name. So "look them up by name on the new browser" cannot be the mechanism —
+   for 9 in 10 golfers there is no name to look up.
+   A link is the version of identity that costs nothing to accept: no typing, no
+   account, and it works for someone who will never tell us who they are. They text
+   it to themselves once; any browser that opens it IS them, permanently.
+   ⚠️ DELIBERATE TRADE, unlike the 5-minute jump token: this one NEVER expires, so
+   anyone holding it can add hums to that board. On a hum leaderboard with no login
+   and nothing to protect, that costs a board and never anything else — the same
+   trade the recovery code always made, minus the typing. */
+function readBoardLink(){
+  try{
+    const m = /[#&]me=([^&]+)/.exec(location.hash || ''); if(!m) return null;
+    history.replaceState(null,'',location.pathname);          // strip it on sight
+    const [id, ...nm] = decodeURIComponent(m[1]).split('|');
+    if(!id) return null;
+    return { id, name: nm.join('|') || '' };
+  }catch(e){ return null; }
+}
+const _hand = readBoardLink() || readHandoff();
 if(_hand && !localStorage.getItem('humBoardHums')){
   localStorage.setItem(IDK, _hand.id);
   if(_hand.name) localStorage.setItem(NMK, _hand.name);
@@ -459,6 +488,10 @@ let ME = localStorage.getItem(IDK) || (localStorage.setItem(IDK, uid()), localSt
 let NAME = localStorage.getItem(NMK) || '';
 function handoffUrl(base){
   return base + '#h=' + encodeURIComponent([ME, Date.now(), NAME].join('|'));
+}
+/* No timestamp, on purpose - this is the one they KEEP. */
+function boardLinkUrl(){
+  return 'https://hummeter.github.io/#me=' + encodeURIComponent([ME, NAME].join('|'));
 }
 function renderWho(){
   // Show a name only once there IS one. "Unnamed golfer · 5f716017" told the user two
@@ -506,6 +539,19 @@ function recoveryUI(){
 { const mr=document.getElementById('meRename');
   if(mr) mr.onclick = () => document.getElementById('editname').onclick();
 }
+
+{ const ml=document.getElementById('meLink');
+  if(ml) ml.onclick = async () => {
+    const url = boardLinkUrl();
+    const txt = 'My Hum Meter board';
+    const msg = document.getElementById('meLinkMsg');
+    const say = t => { msg.textContent = ' ' + t; setTimeout(()=>{ msg.textContent=''; },3000); };
+    /* The share sheet is the point: it puts iMessage one tap away, which is where a
+       link someone intends to keep actually survives. Clipboard is the fallback. */
+    try{ if(navigator.share){ await navigator.share({text:txt, url}); return; } }catch(e){ return; }
+    try{ await navigator.clipboard.writeText(url); say('Copied — text it to yourself.'); }
+    catch(e){ prompt('Copy this link and text it to yourself:', url); }
+  }; }
 
 /* ── ADOPTING A NAME IS THE RECOVERY, SO IT HAS TO PULL ───────────────────────
    THE BUG THIS FIXES: typing your name used to call renameAll() — which relabels
@@ -1780,6 +1826,9 @@ function paintMe(){
      and costs a first-timer one line they can ignore. */
   { const rec=document.getElementById('meRecover');
     if(rec) rec.style.display = n ? 'none' : ''; }
+  /* Offered once there is something to lose. One hum is not a board. */
+  { const lw=document.getElementById('meLinkWrap');
+    if(lw) lw.style.display = n >= 2 ? '' : 'none'; }
   if(!n){ document.getElementById('myBest').textContent='—';
           document.getElementById('myAvg').textContent='—';
           document.getElementById('myTrend').textContent='—'; return; }
@@ -2175,11 +2224,12 @@ if(_shareBtn) _shareBtn.onclick = async () => {
   setTimeout(()=>{ b.textContent='Share this'; },2600);
 };
 
+/* Was a third copy of the name logic that never pulled - the exact drift adoptName()
+   exists to stop. Found 2026-08-23. */
 document.getElementById('addName').onclick = () => {
   const n = prompt('What should the board call you?', '');
   if(n===null) return;
-  NAME = n.trim().slice(0,24); localStorage.setItem(NMK, NAME);
-  renderWho(); Store.renameAll(NAME); paintMe(); paintAll();
+  adoptName(n);
 };
 
 /* ── NAV ──────────────────────────────────────────────────────────────────── */
