@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Challenge — Hum Meter</title>
+<style>
+:root{
+  --bg:#0b0f14; --card:#141a23; --line:#1e2733; --ink:#eef3f9; --dim:#8ea3bd;
+  --go:#3ef2a0; --ok:#7fd4ff; --warn:#ffc857; --bad:#ff6b6b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); min-height:100vh;
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 0 96px;
+}
+.phone{width:100%;max-width:430px;padding:0 20px}
+
+/* ── the one-line header ─────────────────────────────────────────────── */
+.top{display:flex;align-items:center;justify-content:space-between;
+     padding:18px 0 10px;font-size:11px;letter-spacing:.14em;color:var(--dim)}
+.top b{color:var(--go);font-weight:700}
+
+/* ── screens ─────────────────────────────────────────────────────────── */
+.screen{display:none;animation:in .32s cubic-bezier(.2,.7,.3,1)}
+.screen.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+      padding:20px;margin-bottom:14px}
+h1{font-size:26px;line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:15px;margin:0 0 6px}
+p{margin:0 0 12px;color:var(--dim);font-size:15px}
+.lede{color:var(--ink)}
+.big{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.04em}
+.band{font-size:12px;letter-spacing:.16em;color:var(--go);font-weight:700}
+
+/* ── the trace: the thing that actually travels ──────────────────────── */
+.trace{width:100%;height:96px;display:block}
+.ball{stroke:var(--ok);stroke-width:1.5;stroke-dasharray:4 4;opacity:.75}
+.ballLbl{fill:var(--ok);font-size:9px;letter-spacing:.12em;font-weight:700}
+
+/* ── buttons ─────────────────────────────────────────────────────────── */
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:17px 18px;
+     font:700 17px/1 inherit;background:var(--go);color:#04120b;cursor:pointer;
+     margin-bottom:10px;transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:600}
+.hint{font-size:13px;color:var(--dim);text-align:center;margin:0 0 18px}
+
+/* ── the message mock ────────────────────────────────────────────────── */
+.thread{background:#000;border-radius:22px;padding:16px 14px 20px;border:1px solid var(--line)}
+.to{font-size:11px;color:var(--dim);text-align:center;margin-bottom:14px;letter-spacing:.1em}
+.bub{background:#1c86ff;color:#fff;border-radius:20px 20px 6px 20px;padding:12px 14px;
+     margin-left:auto;max-width:88%;font-size:15px}
+.attInner{background:#0b0f14;border:1px solid var(--line);border-radius:14px;padding:14px}
+.attTop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.attScore{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.attTag{font-size:10px;letter-spacing:.14em;color:var(--go);font-weight:700}
+.link{font-size:12px;color:var(--ok);margin-top:10px;word-break:break-all}
+
+/* ── head to head ────────────────────────────────────────────────────── */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:4px 0 14px}
+.vs .who{font-size:11px;letter-spacing:.12em;color:var(--dim);margin-bottom:4px}
+.vs .n{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.vs .mid{font-size:12px;color:var(--dim);letter-spacing:.1em}
+.win{color:var(--go)} .lose{color:var(--ink);opacity:.55}
+.verdict{font-size:17px;font-weight:700;margin:0 0 4px}
+
+/* ── the record table ────────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:15px;margin-top:6px}
+th{font-size:10px;letter-spacing:.12em;color:var(--dim);text-align:left;font-weight:700;
+   padding:0 0 8px}
+td{padding:9px 0;border-top:1px solid var(--line)}
+td.r,th.r{text-align:right}
+.beat{color:var(--go);font-weight:700}
+
+/* ── stepper ─────────────────────────────────────────────────────────── */
+.nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);
+     padding:22px 20px 26px;display:flex;justify-content:center}
+.navIn{width:100%;max-width:430px;display:flex;align-items:center;gap:14px}
+.dots{display:flex;gap:6px;flex:1;justify-content:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--go)}
+.nb{border:1px solid var(--line);background:var(--card);color:var(--ink);
+    border-radius:11px;padding:11px 16px;font:600 14px/1 inherit;cursor:pointer}
+.nb:disabled{opacity:.3}
+.note{font-size:12px;color:var(--dim);border-left:2px solid var(--line);
+      padding-left:12px;margin:14px 0 0}
+.note b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="top"><span>THE CHALLENGE</span><b id="stepName">1 · YOU JUST HUMMED</b></div>
+
+  <!-- ═══ 1 · YOUR RESULT ═══════════════════════════════════════════════ -->
+  <section class="screen on" id="s0">
+    <div class="card">
+      <div class="band">ELITE</div>
+      <div class="big">96</div>
+      <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none" aria-hidden="true">
+        <line class="ball" x1="248" y1="6" x2="248" y2="90"/>
+        <text class="ballLbl" x="252" y="16">THE BALL</text>
+        <path d="M6,54 L26,52 L46,55 L66,51 L86,54 L106,52 L126,55 L146,53 L166,51
+                 L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
+              fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <p style="margin:10px 0 0"><span class="lede"><b>You held it all the way through the
+      ball.</b></span> Your line barely moved — that is what a 96 looks like.</p>
+    </div>
+    <button class="btn" onclick="go(1)">Send it to a mate</button>
+    <p class="hint">One tap. No account, nothing to install.</p>
+    <p class="note"><b>Why this button and not “Share”.</b> “Share” means broadcast, and a
+    number broadcast to nobody in particular gets ignored. <b>A mate is a person</b> — and a
+    challenge aimed at one person is the only share anyone actually completes.</p>
+  </section>
+
+  <!-- ═══ 2 · WHAT ACTUALLY SENDS ═══════════════════════════════════════ -->
+  <section class="screen" id="s1">
+    <div class="thread">
+      <div class="to">TO: DAVE</div>
+      <div class="bub">
+        Bet you can’t hold a steadier line than this.
+        <div class="attInner" style="margin-top:10px">
+          <div class="attTop"><span class="attScore">96</span><span class="attTag">BEAT IT</span></div>
+          <svg class="trace" style="height:60px" viewBox="0 0 300 60" preserveAspectRatio="none">
+            <line class="ball" x1="218" y1="4" x2="218" y2="56"/>
+            <path d="M4,32 L24,30 L44,33 L64,29 L84,32 L104,30 L124,33 L144,31 L164,29
+                     L184,32 L204,30 L224,33 L244,31 L264,35 L294,31"
+                  fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="link">hummeter.github.io/#vs=8f2a…</div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:18px"><b>The picture is the message, not the number.</b>
+    Wordle did not go viral on scores — it went viral on the little grid, because the
+    <b>shape</b> of how you did is legible to someone who has never played.
+    <b>Your trace is that grid.</b> Dave understands a flat green line and a wobbly one
+    instantly, before he taps anything.</p>
+    <p class="note"><b>And it works even if he never taps.</b> The image carries the whole
+    idea, so the message is worth sending on its own — the link is the upside, not the point.</p>
+  </section>
+
+  <!-- ═══ 3 · WHAT DAVE LANDS ON ════════════════════════════════════════ -->
+  <section class="screen" id="s2">
+    <div class="card" style="text-align:center">
+      <p style="font-size:13px;letter-spacing:.1em;margin-bottom:14px">BRIXTON CHALLENGED YOU</p>
+      <div class="big" style="font-size:56px">96</div>
+      <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none" style="opacity:.5">
+        <line class="ball" x1="248" y1="6" x2="248" y2="90"/>
+        <text class="ballLbl" x="252" y="16">THE BALL</text>
+        <path d="M6,54 L26,52 L46,55 L66,51 L86,54 L106,52 L126,55 L146,53 L166,51
+                 L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
+              fill="none" stroke="#3ef2a0" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <h1 style="font-size:22px;margin-top:14px">Hum through your swing.<br>Hold a steadier line.</h1>
+      <p style="margin-bottom:0">Phone on the ground. Hum from address through the ball.</p>
+    </div>
+    <button class="btn" onclick="go(3)">Tap once, then hum</button>
+    <p class="hint">It stops on its own.</p>
+    <p class="note"><b>This screen has one job: get Dave humming inside five seconds.</b>
+    No signup, no explainer, no tour. The research line that matters most:
+    <b>virality is not the invite, it is what happens after the invite is accepted.</b>
+    Every cold arrival we have ever had bounced because it landed on an empty tool with no
+    reason to start. <b>Brixton’s 96 is the reason.</b></p>
+  </section>
+
+  <!-- ═══ 4 · HEAD TO HEAD ══════════════════════════════════════════════ -->
+  <section class="screen" id="s3">
+    <div class="card">
+      <div class="vs">
+        <div><div class="who">YOU</div><div class="n lose">91</div></div>
+        <div class="mid">VS</div>
+        <div style="text-align:right"><div class="who">BRIXTON</div><div class="n win">96</div></div>
+      </div>
+      <svg class="trace" viewBox="0 0 340 96" preserveAspectRatio="none">
+        <line class="ball" x1="248" y1="6" x2="248" y2="90"/>
+        <text class="ballLbl" x="252" y="16">THE BALL</text>
+        <path d="M6,54 L26,52 L46,55 L66,51 L86,54 L106,52 L126,55 L146,53 L166,51
+                 L186,54 L206,52 L226,55 L246,53 L266,58 L286,50 L306,56 L334,53"
+              fill="none" stroke="#3ef2a0" stroke-width="2" opacity=".3" stroke-linecap="round"/>
+        <path d="M6,55 L26,50 L46,58 L66,49 L86,56 L106,51 L126,57 L146,52 L166,54
+                 L186,49 L206,57 L226,50 L246,72 L266,40 L286,62 L306,52 L334,56"
+              fill="none" stroke="#ffc857" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <p class="verdict" style="margin-top:12px">You lost it right at the ball.</p>
+      <p style="margin-bottom:0">Dead steady until impact, then it jumped. <b class="lede">You’re
+      bracing for the hit</b> — Brixton held his line straight through.</p>
+    </div>
+    <button class="btn" onclick="go(4)">Send it back to Brixton</button>
+    <button class="btn ghost" onclick="go(4)">Text myself my board</button>
+    <p class="note"><b>Two buttons, both doing a job.</b> “Send it back” is the loop — every
+    challenge answered creates the next challenge, so one send becomes a rally instead of a
+    dead end.</p>
+    <p class="note"><b>“Text myself my board” is where the data problem gets solved</b>, and
+    this is the right moment for it. <b>Dave now has something to lose.</b> Asking a stranger
+    who owns nothing to save it is a chore; asking a man who just got beaten by 5 to keep his
+    board so he can defend it is a favour. <b>No name typed, no account</b> — the link is his
+    identity, so his hums follow him to any phone or browser.</p>
+    <p class="note"><b>And notice he still has not told us who he is.</b> That is on purpose —
+    9 of 10 golfers never will.</p>
+  </section>
+
+  <!-- ═══ 5 · THE RECORD ════════════════════════════════════════════════ -->
+  <section class="screen" id="s4">
+    <div class="card">
+      <h2>Your 96 is still standing</h2>
+      <p style="margin-bottom:2px">9 golfers have tried it. 2 have beaten it.</p>
+      <table>
+        <thead><tr><th>WHO</th><th class="r">THEIR BEST</th></tr></thead>
+        <tbody>
+          <tr><td>Ellie</td><td class="r beat">98</td></tr>
+          <tr><td>Sam</td><td class="r beat">97</td></tr>
+          <tr><td>Dave</td><td class="r">91</td></tr>
+          <tr><td>+ 6 more</td><td class="r">88 and below</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="btn ghost" onclick="go(0)">Start again</button>
+    <p class="note"><b>This screen is the content engine, not a feature.</b> One new column in
+    the database (which hum a hum was answering) and every challenge becomes a live, queryable
+    fact. <b>“Nobody has beaten 99” stops being a claim and becomes a scoreboard</b> —
+    and it is a weekly series, not a one-off post: <i>still undefeated</i> → <i>someone
+    finally beat me</i> → <i>a 14-year-old beat me.</i></p>
+    <p class="note"><b>Every post drives people into the tool that writes the next post.</b></p>
+  </section>
+</div>
+
+<div class="nav"><div class="navIn">
+  <button class="nb" id="prev" onclick="go(i-1)">← Back</button>
+  <div class="dots" id="dots"></div>
+  <button class="nb" id="next" onclick="go(i+1)">Next →</button>
+</div></div>
+
+<script>
+const NAMES=['1 · YOU JUST HUMMED','2 · WHAT ACTUALLY SENDS','3 · WHAT DAVE LANDS ON',
+             '4 · HEAD TO HEAD','5 · YOUR RECORD'];
+const N=NAMES.length; let i=0;
+const dots=document.getElementById('dots');
+for(let k=0;k<N;k++){ const d=document.createElement('div'); d.className='dot'; d.onclick=()=>go(k); dots.appendChild(d); }
+function go(n){
+  i=Math.max(0,Math.min(N-1,n));
+  document.querySelectorAll('.screen').forEach((s,k)=>s.classList.toggle('on',k===i));
+  [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));
+  document.getElementById('stepName').textContent=NAMES[i];
+  document.getElementById('prev').disabled=i===0;
+  document.getElementById('next').disabled=i===N-1;
+  scrollTo({top:0,behavior:'smooth'});
+}
+go(0);
+</script>
+</body>
+</html>
