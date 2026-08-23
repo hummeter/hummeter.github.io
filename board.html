@@ -249,6 +249,18 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
 
   <!-- ── MY BOARD ──────────────────────────────────────────────────────── -->
   <section class="view" id="v-me">
+    <!-- ⚠️ 2026-08-23. "I used this yesterday and then it went away. Why does it go
+         away? The data should not disappear." It never did — every hum was in the
+         database the whole time. But the board only knew him by what THIS browser was
+         holding, and crossing from Instagram's in-app browser to Safari (or any clear)
+         hands us a browser holding nothing. To the code that is a stranger, so it shows
+         an empty board and asks his name — the same event, reported as two problems.
+         An empty board must therefore carry the way back IN PLAIN WORDS, not a recovery
+         code (jargon he has rejected twice) and not only after he hums again. -->
+    <p class="foot" id="meRecover" style="display:none;text-align:left;margin:0 0 12px">
+      Been here before? <span style="text-decoration:underline;cursor:pointer"
+      id="meRecoverLink">Enter the name you used</span> and your hums come back.
+    </p>
     <div class="card">
       <div class="rowm" style="margin-top:0">
         <div class="m"><b>Your best</b><span class="big" id="myBest">—</span></div>
@@ -495,12 +507,42 @@ function recoveryUI(){
   if(mr) mr.onclick = () => document.getElementById('editname').onclick();
 }
 
+/* ── ADOPTING A NAME IS THE RECOVERY, SO IT HAS TO PULL ───────────────────────
+   THE BUG THIS FIXES: typing your name used to call renameAll() — which relabels
+   the rows this browser already has — and never asked the server for the rows it
+   does NOT have. On a fresh browser that is nothing, so entering "Brixton" left the
+   board exactly as empty as before he answered. It only healed on the NEXT load,
+   by which point he had already read the empty board as "my data is gone".
+   Every path that sets a name goes through here now: set it, pull everything that
+   name ever wrote, THEN paint. One function, so a third call site cannot drift.  */
+async function adoptName(raw){
+  const v = String(raw||'').trim().slice(0,24);
+  if(!v) return;                        // an empty prompt is not a name
+  NAME = v; localStorage.setItem(NMK, NAME); localStorage.removeItem(SNOOZE);
+  renderWho(); Store.renameAll(NAME); paintMe(); paintAll(); paintNameNudge();
+  try{ await Store.hydrateMine(); }catch(e){}
+  /* Keep the spelling the board already knows him by. He types "brixton" on a new
+     phone; the 69 rows say "Brixton". Writing the new casing over them would rename
+     him on a public leaderboard as the price of getting his own history back. */
+  const canon = Store.localAll().find(r=> r.name &&
+    r.name.trim().toLowerCase()===NAME.trim().toLowerCase() && r.name.trim()!==NAME);
+  if(canon){ NAME = canon.name.trim().slice(0,24); localStorage.setItem(NMK, NAME);
+             renderWho(); Store.renameAll(NAME); }
+  paintMe(); paintAll(); paintNameNudge();
+}
+
 document.getElementById('editname').onclick = () => {
   const n = prompt('What should the board call you?', NAME||'');
   if(n===null) return;
-  NAME = n.trim().slice(0,24); localStorage.setItem(NMK, NAME); renderWho();
-  Store.renameAll(NAME); paintMe(); paintAll();
+  adoptName(n);
 };
+
+{ const rl=document.getElementById('meRecoverLink');
+  if(rl) rl.onclick = () => {
+    const n = prompt('What name did you use? Your hums come back on this phone.', NAME||'');
+    if(n===null) return;
+    adoptName(n);
+  }; }
 
 /* ── STORE ────────────────────────────────────────────────────────────────────
    One interface, two backings. Local always writes (so the board is instant and
@@ -570,7 +612,10 @@ const Store = {
   async hydrateMine(){
     if(!cloudOn()) return false;
     const q = ['player_id=eq.'+encodeURIComponent(ME)];
-    if(NAME) q.push('name=eq.'+encodeURIComponent(NAME));
+    /* ilike, not eq: the name is the recovery key now, and a golfer who types
+       "brixton" on a new phone must find the rows he wrote as "Brixton". An
+       exact match would hand him an empty board and no way to tell why. */
+    if(NAME) q.push('name=ilike.'+encodeURIComponent(NAME.trim()));
     let pulled=[];
     for(const filter of q){
       try{
@@ -1630,8 +1675,7 @@ function paintNameNudge(){
     if(n===null) return;
     const v = n.trim().slice(0,24);
     if(!v) return;                       // an empty prompt is not a name
-    NAME = v; localStorage.setItem(NMK, NAME); localStorage.removeItem(SNOOZE);
-    renderWho(); Store.renameAll(NAME); paintMe(); paintAll(); paintNameNudge();
+    adoptName(v);
   };
   const nl=document.getElementById('nudgeLater');
   if(nl) nl.onclick = () => {
@@ -1730,6 +1774,12 @@ function paintMe(){
   document.getElementById('myN').textContent = n;
   document.getElementById('tensionCard').style.display = n ? '' : 'none';
   document.getElementById('strikeCard').style.display  = n ? '' : 'none';
+  /* An empty board is one of two opposite things and they need opposite offers:
+     nobody has hummed here yet, or somebody HAS and this browser has never met them.
+     We cannot tell the two apart, so the offer is shown whenever the board is empty
+     and costs a first-timer one line they can ignore. */
+  { const rec=document.getElementById('meRecover');
+    if(rec) rec.style.display = n ? 'none' : ''; }
   if(!n){ document.getElementById('myBest').textContent='—';
           document.getElementById('myAvg').textContent='—';
           document.getElementById('myTrend').textContent='—'; return; }
