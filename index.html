@@ -420,6 +420,54 @@ const CLOUD = {
 // the data: add a hum, read the board, attach a strike rating. No deletes, no schema.
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
 
+/* ── THE FAILURE LOG ──────────────────────────────────────────────────────────
+   Until 2026-10-07 only SUCCESSFUL hums ever reached the database. A golfer who was
+   blocked by Instagram, refused the mic, or got "didn't hear a hum" left no trace, so
+   the failure rate was unknowable. One fire-and-forget row per moment into `events`.
+   Never blocks, never throws, never sends the raw user agent - only the coarse
+   browser/OS bucket, which is all the funnel needs. */
+const PAGE = 'board';
+let _jsErrs = 0;
+function track(kind, detail){
+  if(!cloudOn()) return;
+  try{
+    const ua = navigator.userAgent || '';
+    const browser = /Instagram/i.test(ua) ? 'instagram' : /FBAN|FBAV|FB_IAB/i.test(ua) ? 'facebook'
+      : /TikTok/i.test(ua) ? 'tiktok' : /CriOS|Chrome/i.test(ua) ? 'chrome'
+      : /Safari/i.test(ua) ? 'safari' : 'other';
+    const os = /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+    let pid = null; try{ pid = ME; }catch(e){}
+    fetch(CLOUD.url+'/events', {method:'POST', keepalive:true,
+      headers:{'Content-Type':'application/json', apikey:CLOUD.key,
+               Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
+      body: JSON.stringify({ player_id: pid, page: PAGE, kind,
+        detail: detail==null ? null : String(detail).slice(0,200), browser, os })
+    }).catch(()=>{});
+  }catch(e){}
+}
+addEventListener('error', e => { if(++_jsErrs <= 5)
+  track('js_error', (e.message||'?') + ' @' + (e.lineno||0) + ':' + (e.colno||0)); });
+addEventListener('unhandledrejection', e => { if(++_jsErrs <= 5)
+  track('js_error', 'promise: ' + String(e.reason && (e.reason.message || e.reason)).slice(0,150)); });
+
+/* ── READ EVERY ROW ───────────────────────────────────────────────────────────
+   Supabase caps one response at 1,000 rows no matter what `limit` says. The board
+   asked for 5,000 and silently got 1,000 the day the table passed 1,000 hums
+   (2026-10-07: 1,133 rows, the oldest 133 were invisible). Page until a short page. */
+async function fetchAll(query){
+  const out = [];
+  for(let off=0; off<50000; off+=1000){
+    const r = await fetch(CLOUD.url+'/'+CLOUD.table+'?'+query+'&offset='+off+'&limit=1000',
+      {headers:{apikey:CLOUD.key, Authorization:'Bearer '+CLOUD.key}});
+    if(!r.ok) throw new Error('read '+r.status);
+    const page = await r.json();
+    if(!Array.isArray(page)) break;
+    out.push(...page);
+    if(page.length < 1000) break;
+  }
+  return out;
+}
+
 /* ── IDENTITY ─────────────────────────────────────────────────────────────────
    No password, no email, no signup screen. A cold Instagram audience will not
    create an account to try a toy — they bounce, and the dataset never happens.
@@ -603,11 +651,12 @@ const Store = {
     const rows = this.localAll(); rows.push(rec); this.localPut(rows);
     if(cloudOn()){
       try{
-        await fetch(CLOUD.url+'/'+CLOUD.table, {method:'POST',
+        const r = await fetch(CLOUD.url+'/'+CLOUD.table, {method:'POST',
           headers:{'Content-Type':'application/json', apikey:CLOUD.key,
                    Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
           body: JSON.stringify(rec)});
-      }catch(e){ /* offline is fine — the local copy is authoritative for MY board */ }
+        if(!r.ok) track('save_failed', r.status);
+      }catch(e){ track('save_offline'); /* the local copy is authoritative for MY board */ }
     }
     return rec;
   },
@@ -616,21 +665,43 @@ const Store = {
     const rows=this.localAll(); const r=rows.find(x=>x.hum_id===id);
     if(r) Object.assign(r, fields);
     this.localPut(rows);
+    /* ⚠️ 2026-10-07: direct UPDATEs on `hums` are closed. The old policy let anyone
+       holding the public key rewrite ANY row, score included. The only writes left
+       after the insert are these two functions, and both demand the row's own
+       player_id and refuse to overwrite a rating that is already there. */
+    const pid = r ? r.player_id : ME;
     if(cloudOn()){
-      try{ await fetch(CLOUD.url+'/'+CLOUD.table+'?hum_id=eq.'+id, {method:'PATCH',
+      try{ const res = await fetch(CLOUD.url+'/rpc/rate_hum', {method:'POST',
         headers:{'Content-Type':'application/json', apikey:CLOUD.key,
-                 Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
-        body: JSON.stringify(fields)}); }catch(e){}
+                 Authorization:'Bearer '+CLOUD.key},
+        body: JSON.stringify({p_hum_id:id, p_player_id:pid,
+                              p_strike: fields.strike ?? null, p_source: fields.source ?? null})});
+        /* Fallback for the window before the SQL migration has run: the function does
+           not exist yet (404), so use the old direct write. Once the migration closes
+           direct UPDATEs this path changes nothing and the RPC is the only door. */
+        if(res.status===404){
+          const old = await fetch(CLOUD.url+'/'+CLOUD.table+'?hum_id=eq.'+id, {method:'PATCH',
+            headers:{'Content-Type':'application/json', apikey:CLOUD.key,
+                     Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
+            body: JSON.stringify(fields)});
+          if(!old.ok) track('rate_failed', old.status);
+        } else if(!res.ok) track('rate_failed', res.status); }catch(e){}
     }
   },
 
   renameAll(name){
     const rows=this.localAll(); rows.forEach(r=>{ if(r.player_id===ME) r.name=name; });
     this.localPut(rows);
-    if(cloudOn()){ fetch(CLOUD.url+'/'+CLOUD.table+'?player_id=eq.'+ME, {method:'PATCH',
+    if(cloudOn()){ fetch(CLOUD.url+'/rpc/set_name', {method:'POST',
       headers:{'Content-Type':'application/json', apikey:CLOUD.key,
-               Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
-      body: JSON.stringify({name})}).catch(()=>{}); }
+               Authorization:'Bearer '+CLOUD.key},
+      body: JSON.stringify({p_player_id:ME, p_name:name})})
+      .then(r=>{
+        if(r.status===404) return fetch(CLOUD.url+'/'+CLOUD.table+'?player_id=eq.'+ME, {method:'PATCH',
+          headers:{'Content-Type':'application/json', apikey:CLOUD.key,
+                   Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
+          body: JSON.stringify({name})});
+        if(!r.ok) track('rename_failed', r.status); }).catch(()=>{}); }
   },
 
   /* ⚠️ "I put so many hums in. Why is it not showing me data in there?"
@@ -665,11 +736,7 @@ const Store = {
     let pulled=[];
     for(const filter of q){
       try{
-        const r = await fetch(CLOUD.url+'/'+CLOUD.table+'?'+filter+
-          '&select=*&order=at.desc&limit=500',
-          {headers:{apikey:CLOUD.key, Authorization:'Bearer '+CLOUD.key}});
-        const rows = await r.json();
-        if(Array.isArray(rows)) pulled = pulled.concat(rows);
+        pulled = pulled.concat(await fetchAll(filter+'&select=*&order=at.desc'));
       }catch(e){ /* offline: the local copy is still correct, just shorter */ }
     }
     if(!pulled.length) return false;
@@ -690,11 +757,9 @@ const Store = {
       // Deletes are deliberately not permitted by the row-level policies - nobody can
       // wipe the data, which also means the wiring-test row cannot be removed. Filter it
       // out at read time instead.
-      const r = await fetch(CLOUD.url+'/'+CLOUD.table+'?select=*&order=at.desc&limit=5000',
-        {headers:{apikey:CLOUD.key, Authorization:'Bearer '+CLOUD.key}});
-      const all = await r.json();
-      return { rows: Array.isArray(all) ? all.filter(x=>x.source!=='wiring-test-ignore') : [], local:false };
-    }catch(e){ return { rows:this.localAll(), local:true }; }
+      const all = await fetchAll('select=*&order=at.desc,hum_id');
+      return { rows: all.filter(x=>x.source!=='wiring-test-ignore'), local:false };
+    }catch(e){ track('board_read_failed', e && e.message); return { rows:this.localAll(), local:true }; }
   }
 };
 
@@ -724,6 +789,7 @@ function cleanUrl(){ return location.origin + location.pathname; }
    HIDDEN until the jump has visibly failed. Nobody reads instructions they don't need. */
 function showBlocker(){
   if(!inAppBrowser() && !insecure()) return false;
+  track(insecure() ? 'blocked_insecure' : 'blocked_inapp');
   const url = cleanUrl();
   const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
   const app = ios ? 'Safari' : 'Chrome';
@@ -954,6 +1020,7 @@ async function start(){
     stream = await navigator.mediaDevices.getUserMedia({audio:{
       echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
   }catch(e){
+    track('mic_denied', e && e.name);
     document.getElementById('live').textContent =
       'I need the microphone. Allow it in your browser settings, then tap again.'; return;
   }
@@ -1283,7 +1350,7 @@ function stop(){
      the last live frame stayed on screen - a full, correct-looking hum sitting directly
      above the words "didn't hear a hum". Whatever the message says, the graph has to
      agree with it. */
-  if(z-a < 10){ H.setFrames([]); draw();
+  if(z-a < 10){ H.setFrames([]); draw(); track('no_hum');
     document.getElementById('live').textContent =
     'Didn’t hear a hum. Hold one note, closer to the phone.'; return; }
   const off=a;
@@ -1296,7 +1363,7 @@ function stop(){
   const rumble = loBand.length ? loBand.reduce((s,x)=>s+x,0)/loBand.length : 0;
   const q = H.signalQuality(fr, rumble);
   if(!q.ok){
-    showWind(q); draw(); return;
+    track('wind', q.fails.join(',')); showWind(q); draw(); return;
   }
   clearWind();
 
@@ -1324,7 +1391,7 @@ function stop(){
       const ref0 = H.anchorNote(fr.filter(f=>f.hz).map(f=>f.hz));
       const hist = Store.mine().map(r=>r.note_hz).filter(v=>v>0);
       const g = H.registerGuard(ref0, hist);
-      if(!g.trusted){ showOctave(g); draw(); return; }
+      if(!g.trusted){ track('octave', g.why); showOctave(g); draw(); return; }
     }
   }
   /* THE OCTAVE LOCK, on the finished track. resolveOctaves re-asks the AUDIO before it
@@ -1599,7 +1666,7 @@ function showResult(s){
     impact_at: s.impact ? +(s.impact.frame*H.HOP/1000).toFixed(2) : null
   };
 
-  Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
+  track('hum_scored', pendingHum.band); Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
   if(document.getElementById('card')) drawShareCard(s);
 
   /* ⚠️ THIS USED TO FIRE ONLY WHEN THE IMPACT DETECTOR HEARD A STRIKE, AND THAT
@@ -2253,6 +2320,7 @@ document.getElementById('firstok').onclick=()=>{
   document.getElementById('firstrun').style.display='none';
 };
 
+track('page_open', location.hash.startsWith('#vs=') ? 'challenge' : document.referrer ? (()=>{ try{ return new URL(document.referrer).hostname; }catch(e){ return 'other'; } })() : 'direct');
 showBlocker();          // must run before anything invites them to tap
 renderWho(); fit(); draw(); paintMe(); paintAll();
 /* Ask the SERVER who this is before ever asking the human again. Fire-and-forget:

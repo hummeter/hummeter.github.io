@@ -444,6 +444,28 @@ const CLOUD = { url:'https://dbuyjntbpqbimkuewegg.supabase.co/rest/v1',
 // board, and attaching a strike rating. No deletes, no schema access, nothing else.
 // (Supabase renamed these from 'anon' to 'publishable' in 2025; same thing.)
 const cloudOn = () => !!(CLOUD.url && CLOUD.key);
+/* THE FAILURE LOG (2026-10-07) - same `events` table as the board. Before this only
+   successful hums were recorded, so blocks and mic refusals were invisible. */
+let _jsErrs = 0;
+function track(kind, detail){
+  if(!cloudOn()) return;
+  try{
+    const ua = navigator.userAgent || '';
+    const browser = /Instagram/i.test(ua) ? 'instagram' : /FBAN|FBAV|FB_IAB/i.test(ua) ? 'facebook'
+      : /TikTok/i.test(ua) ? 'tiktok' : /CriOS|Chrome/i.test(ua) ? 'chrome'
+      : /Safari/i.test(ua) ? 'safari' : 'other';
+    const os = /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+    let pid = null; try{ pid = VISITOR; }catch(e){}
+    fetch(CLOUD.url+'/events', {method:'POST', keepalive:true,
+      headers:{'Content-Type':'application/json', apikey:CLOUD.key,
+               Authorization:'Bearer '+CLOUD.key, Prefer:'return=minimal'},
+      body: JSON.stringify({ player_id: pid, page:'simple', kind,
+        detail: detail==null ? null : String(detail).slice(0,200), browser, os })
+    }).catch(()=>{});
+  }catch(e){}
+}
+addEventListener('error', e => { if(++_jsErrs <= 5)
+  track('js_error', (e.message||'?') + ' @' + (e.lineno||0) + ':' + (e.colno||0)); });
 const VISITOR = (()=>{ try{
   let v=localStorage.getItem('humVisitor');
   if(!v){ v = Math.random().toString(36).slice(2)+Date.now().toString(36);
@@ -452,6 +474,7 @@ const VISITOR = (()=>{ try{
 
 function logHum(s, band){
   if(!cloudOn()) return;
+  track('hum_scored', band);
   try{
     fetch(CLOUD.url+'/'+CLOUD.table, {method:'POST', keepalive:true,
       headers:{'Content-Type':'application/json', apikey:CLOUD.key,
@@ -1465,7 +1488,9 @@ function blocker(){
 // — so the most useful thing the page can do is hand them the address to paste.
 /* Checked on LOAD, not after a failed tap. Making someone tap, watch nothing happen, and
    only then be told why is the difference between "blocked" and "broken". */
+track('page_open', document.referrer ? (()=>{ try{ return new URL(document.referrer).hostname; }catch(e){ return 'other'; } })() : 'direct');
 if(inAppBrowser()){
+  track('blocked_inapp');
   addEventListener('DOMContentLoaded', () => {
     showEscapeHatch();
     ['go','hint','how','stage'].forEach(id => {
@@ -1521,6 +1546,7 @@ async function start(){
     ac = new (window.AudioContext||window.webkitAudioContext)();
     if(ac.state === 'suspended') await ac.resume();
   }catch(e){
+    track('audio_error', e && e.name);
     document.getElementById('hint').innerHTML =
       '<b style="color:var(--warn)">Audio didn’t start.</b> Reload and try again.';
     return;
@@ -1540,6 +1566,7 @@ async function start(){
     //    System Settings before the page ever gets asked. Same error, different fix,
     //    so name both.
     const n = e && e.name;
+    track('mic_denied', n);
     const msg =
       n === 'NotAllowedError' ? 'Mic permission was denied. Tap the 🔒 in the address ' +
         'bar → allow Microphone, then reload. On a Mac also check System Settings → ' +
@@ -1915,7 +1942,7 @@ function stop(){
   window.__lastScore = s;          // draw() marks the cracks from this
   draw();
   if(!s){ document.getElementById('hint').textContent =
-    'Didn’t hear a hum. Get closer to the mic and hold one note.'; return; }
+    'Didn’t hear a hum. Get closer to the mic and hold one note.'; track('no_hum'); return; }
   /* ── THE WIND GATE ──────────────────────────────────────────────────────────
      REFUSE, don't guess. This page is about to be handed to strangers standing on
      a driving range, and one of Brixton's own range clips found ZERO hums until it

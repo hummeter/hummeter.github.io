@@ -63,6 +63,14 @@ td{padding:8px 4px;border-bottom:1px solid #131b26}
 </div>
 
 <div class="card">
+  <b>Where golfers fail — last 14 days</b>
+  <div class="hint">Every block, refusal and error the page hit. Logging began 2026-10-07; before that, failures left no trace at all.</div>
+  <table style="margin-top:8px"><thead><tr><th>What happened</th><th>Times</th><th>Golfers</th><th>Top detail</th></tr></thead>
+  <tbody id="evRows"><tr><td colspan="4" class="hint">loading…</td></tr></tbody></table>
+  <div class="hint" id="evNote" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
   <b>Does a better hum mean a better strike?</b>
   <div class="hint" id="corrN">—</div>
   <canvas id="scatter" height="300" style="margin-top:10px"></canvas>
@@ -105,9 +113,49 @@ function pearson(x,y){
 const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 
 (async function(){
-  const r = await fetch(`${CLOUD.url}/${CLOUD.table}?select=*&limit=5000`,
-    {headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
-  const all = (await r.json()).filter(x=>x.source!=='wiring-test-ignore');
+  /* Supabase returns at most 1,000 rows per request whatever `limit` says. This page
+     asked for 5,000 and quietly analysed an arbitrary 1,000 once the table passed that
+     (2026-10-07). Page through everything. */
+  async function fetchAll(table, query){
+    const out=[];
+    for(let off=0; off<50000; off+=1000){
+      const r = await fetch(`${CLOUD.url}/${table}?${query}&offset=${off}&limit=1000`,
+        {headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+      if(!r.ok) throw new Error(table+' '+r.status);
+      const page = await r.json(); out.push(...page);
+      if(page.length<1000) break;
+    }
+    return out;
+  }
+  const all = (await fetchAll(CLOUD.table,'select=*&order=at.asc,hum_id'))
+    .filter(x=>x.source!=='wiring-test-ignore');
+
+  // ── FAILURES ───────────────────────────────────────────────────────────────
+  try{
+    const since = new Date(Date.now()-14*864e5).toISOString();
+    const ev = await fetchAll('events',`select=*&at=gte.${since}&order=at.asc,id`);
+    const LABEL = { page_open:'Opened the page', blocked_inapp:'Blocked by in-app browser',
+      blocked_insecure:'Blocked: not https', mic_denied:'Mic refused / failed',
+      audio_error:'Audio failed to start', no_hum:'"Didn\u2019t hear a hum"',
+      wind:'Refused: wind / noise', octave:'Refused: octave misread', hum_scored:'Got a score',
+      save_failed:'Hum failed to save', save_offline:'Hum saved offline only',
+      rate_failed:'Strike rating failed', rename_failed:'Name failed to save',
+      board_read_failed:'Leaderboard failed to load', js_error:'JavaScript error' };
+    const by={};
+    ev.forEach(e=>{ const k=e.kind; (by[k]=by[k]||{n:0,p:new Set(),d:{}});
+      by[k].n++; by[k].p.add(e.player_id); if(e.detail) by[k].d[e.detail]=(by[k].d[e.detail]||0)+1; });
+    const order=Object.keys(LABEL).filter(k=>by[k]).concat(Object.keys(by).filter(k=>!LABEL[k]));
+    $('evRows').innerHTML = order.length ? order.map(k=>{
+      const top=Object.entries(by[k].d).sort((a,b)=>b[1]-a[1])[0];
+      return `<tr><td>${esc(LABEL[k]||k)}</td><td>${by[k].n}</td><td>${by[k].p.size}</td>`+
+        `<td class="hint">${top?esc(top[0])+' ('+top[1]+')':''}</td></tr>`; }).join('')
+      : '<tr><td colspan="4" class="hint">No events yet.</td></tr>';
+    const opens = by.page_open ? by.page_open.p.size : 0;
+    const scored = by.hum_scored ? by.hum_scored.p.size : 0;
+    $('evNote').textContent = opens<20
+      ? `Only ${opens} visitors logged so far — too few to call a conversion rate.`
+      : `${scored} of ${opens} visitors (${Math.round(100*scored/opens)}%) got from opening the page to a score.`;
+  }catch(e){ $('evRows').innerHTML='<tr><td colspan="4" class="hint">Events table not reachable ('+esc(e.message)+').</td></tr>'; }
   $('stamp').textContent = all.length+' rows · '+new Date().toLocaleString();
 
   const rated = all.filter(x=>x.strike!=null);
