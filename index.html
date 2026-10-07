@@ -1021,8 +1021,16 @@ addEventListener('resize', ()=>{ fit(); draw(); });
 async function start(){
   if(running) return stop();
   try{
+    /* autoGainControl ON (2026-10-07). V1 has had it on since August for the reason in
+       its own comment: a hum from a phone at arm's length or on the ground comes in so
+       faint without it that the silence gate eats it. This page never got that fix,
+       and Brixton: "it's just kind of hard to pick up unless you hum" [loud].
+       The pitch score is level-independent, and findImpact() is a RATIO against the
+       frames just before it, so steady gain does not move it. The risk is AGC squashing
+       the strike transient - so WATCH IT: strike heard on 52% of hums (344/659,
+       9/22-10/6, AGC off). If that falls below ~45% over a week, this is why. */
     stream = await navigator.mediaDevices.getUserMedia({audio:{
-      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+      echoCancellation:false, noiseSuppression:false, autoGainControl:true}});
   }catch(e){
     track('mic_denied', e && e.name);
     document.getElementById('live').textContent =
