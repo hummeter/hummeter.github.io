@@ -140,7 +140,8 @@ const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',
       wind:'Refused: wind / noise', octave:'Refused: octave misread', hum_scored:'Got a score',
       save_failed:'Hum failed to save', save_offline:'Hum saved offline only',
       rate_failed:'Strike rating failed', rename_failed:'Name failed to save',
-      board_read_failed:'Leaderboard failed to load', js_error:'JavaScript error' };
+      board_read_failed:'Leaderboard failed to load', js_error:'JavaScript error',
+      streak:'Hit an ELITE streak (detail = length)' };
     const by={};
     ev.forEach(e=>{ const k=e.kind; (by[k]=by[k]||{n:0,p:new Set(),d:{}});
       by[k].n++; by[k].p.add(e.player_id); if(e.detail) by[k].d[e.detail]=(by[k].d[e.detail]||0)+1; });

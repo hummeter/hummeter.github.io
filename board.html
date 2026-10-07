@@ -25,6 +25,9 @@ canvas{width:100%;height:300px;display:block;border-radius:10px;background:#0d14
 .score{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.03em}
 .band{font-size:13px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-top:4px}
 .say{color:var(--dim);font-size:14px;margin-top:10px}
+.streak{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(127,212,255,.08);
+  border:1px solid var(--line);font-size:14px;line-height:1.4}
+.streak b{color:var(--go)} .streak .dots{letter-spacing:4px;font-size:16px;margin-right:6px}
 .rowm{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .m{background:#0f1620;border:1px solid var(--line);border-radius:10px;padding:10px}
 .m b{display:block;font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;font-weight:700}
@@ -202,6 +205,7 @@ code{background:#0f1620;padding:2px 6px;border-radius:5px;font-size:12px}
       <div class="score" id="sc">—</div>
       <div class="band" id="bd"></div>
       <div class="say" id="sy"></div>
+      <div class="streak" id="streak" style="display:none"></div>
       <div class="rowm">
         <!-- No Hz. "118 Hz" is a fact about physics, not about their golf swing, and
              a row that needs explaining costs more trust than it earns. -->
@@ -1615,6 +1619,62 @@ function saveRecording(){
     document.body.appendChild(a); a.click(); a.remove();
   }
 }
+
+/* ── THREE IN A ROW ───────────────────────────────────────────────────────────
+   2026-10-07, from the data: golfers whose FIRST hum scored 92+ hummed again 58% of
+   the time; 75-85 first hums, 82%. And right after setting a new personal best only
+   76% kept going, against 85% after an ordinary hum. Winning ended the session -
+   there was nothing left on screen to chase.
+   One ELITE is also partly luck: a regular's score swings ~±15 between hums. Three
+   in a row is not luck, so the next target is CONSISTENCY, not a bigger number.
+   A streak is consecutive ELITE hums with no gap over 30 minutes - it is a sitting,
+   not a lifetime. Best streak is kept per browser. */
+const STREAK_GAP_MS = 30*60*1000, BEST_STREAK = 'humBestStreak';
+function currentStreak(){
+  const rows = Store.mine();                  // newest first
+  let n = 0, prev = null;
+  for(const r of rows){
+    if(prev && (new Date(prev.at) - new Date(r.at)) > STREAK_GAP_MS) break;
+    if(r.band !== 'ELITE') break;
+    n++; prev = r;
+  }
+  return n;
+}
+function previousStreak(){                    // the run that the newest hum just broke
+  const rows = Store.mine().slice(1);
+  let n = 0, prev = Store.mine()[0] || null;
+  for(const r of rows){
+    if(prev && (new Date(prev.at) - new Date(r.at)) > STREAK_GAP_MS) break;
+    if(r.band !== 'ELITE') break;
+    n++; prev = r;
+  }
+  return n;
+}
+function paintStreak(){
+  const el = document.getElementById('streak'); if(!el) return;
+  const n = currentStreak();
+  let best = 0; try{ best = +localStorage.getItem(BEST_STREAK) || 0; }catch(e){}
+  if(n > best){ best = n; try{ localStorage.setItem(BEST_STREAK, String(n)); }catch(e){} }
+  const goal = n <= 3 ? 3 : n <= 5 ? 5 : 10;   // landing ON a goal shows the payoff
+  const dots = '●'.repeat(Math.min(n,goal)) + '○'.repeat(Math.max(0,goal-n));
+  let html;
+  if(n === 0){
+    const broke = previousStreak();
+    if(broke < 1){ el.style.display='none'; return; }
+    html = `Streak ended at <b>${broke}</b>. Get back to ELITE and start a new run.`;
+  } else if(n === 1){
+    html = `<span class="dots">${dots}</span>That’s one. <b>Hit ELITE 3 swings in a row</b> — one can be luck, three is your swing.`;
+  } else if(n < goal){
+    html = `<span class="dots">${dots}</span><b>${n} in a row.</b> ${goal-n===1?'One more':(goal-n)+' more'} for ${goal}.`;
+  } else {
+    html = `<span class="dots">${dots}</span><b>${n} in a row. That’s not luck — that’s your swing.</b>` +
+           (n === 3 ? ' Next: 5.' : n === 5 ? ' Next: 10.' : '');
+  }
+  if(best > n && best >= 2) html += ` <span class="hint">Your best: ${best} in a row.</span>`;
+  el.innerHTML = html; el.style.display = '';
+  if(n === 3 || n === 5 || n === 10) track('streak', n);
+}
+
 function showResult(s){
   const b = s.total>=H.CAL.bands.ELITE ? ['ELITE','var(--go)']
           : s.total>=H.CAL.bands.CLEAN ? ['CLEAN','var(--ok)']
@@ -1667,6 +1727,7 @@ function showResult(s){
   };
 
   track('hum_scored', pendingHum.band); Store.add(pendingHum).then(()=>{ paintMe(); paintAll(); });
+  paintStreak();
   if(document.getElementById('card')) drawShareCard(s);
 
   /* ⚠️ THIS USED TO FIRE ONLY WHEN THE IMPACT DETECTOR HEARD A STRIKE, AND THAT
